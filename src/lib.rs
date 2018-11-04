@@ -6,8 +6,12 @@ extern crate serde_derive;
 extern crate serde;
 #[macro_use]
 extern crate failure;
+extern crate url;
+#[macro_use]
+extern crate log;
 
 use failure::Error;
+use url::percent_encoding::{utf8_percent_encode, PATH_SEGMENT_ENCODE_SET};
 
 #[derive(Debug, Clone)]
 pub struct Client {
@@ -68,14 +72,81 @@ impl Client {
         }
     }
 
-    pub fn close(self) -> Result<(), Error> {
-        let uri = self.url.join(&format!("session/{}", self.session_id))?;
+    pub fn close(&mut self) -> Result<(), Error> {
+        let uri = self.url.join(&format!(
+            "session/{}",
+            utf8_percent_encode(&self.session_id, PATH_SEGMENT_ENCODE_SET)
+        ))?;
         let mut res = self.client.delete(uri).send()?;
         if res.status().is_success() {
             Ok(())
         } else {
             let json: serde_json::Value = res.json()?;
             bail!("Something on close: {:?} / {:?}", res, json);
+        }
+    }
+
+    pub fn visit(&self, url: &str) -> Result<(), Error> {
+        let uri = self.url.join(&format!(
+            "session/{}/url",
+            utf8_percent_encode(&self.session_id, PATH_SEGMENT_ENCODE_SET)
+        ))?;
+        let mut res = self.client.post(uri).json(&json!({ "url": url })).send()?;
+        if res.status().is_success() {
+            Ok(())
+        } else {
+            let json: serde_json::Value = res.json()?;
+            bail!("Something on visit: {:?} / {:?}", res, json);
+        }
+    }
+
+    pub fn back(&self) -> Result<(), Error> {
+        let uri = self.url.join(&format!(
+            "session/{}/back",
+            utf8_percent_encode(&self.session_id, PATH_SEGMENT_ENCODE_SET)
+        ))?;
+        let mut res = self.client.post(uri).send()?;
+        if res.status().is_success() {
+            Ok(())
+        } else {
+            let json: serde_json::Value = res.json()?;
+            bail!("Something on back: {:?} / {:?}", res, json);
+        }
+    }
+    pub fn forward(&self) -> Result<(), Error> {
+        let uri = self.url.join(&format!(
+            "session/{}/forward",
+            utf8_percent_encode(&self.session_id, PATH_SEGMENT_ENCODE_SET)
+        ))?;
+        let mut res = self.client.post(uri).send()?;
+        if res.status().is_success() {
+            Ok(())
+        } else {
+            let json: serde_json::Value = res.json()?;
+            bail!("Something on forward: {:?} / {:?}", res, json);
+        }
+    }
+
+    pub fn current_url(&self) -> Result<String, Error> {
+        let uri = self.url.join(&format!(
+            "session/{}/url",
+            utf8_percent_encode(&self.session_id, PATH_SEGMENT_ENCODE_SET)
+        ))?;
+        let mut res = self.client.get(uri).send()?;
+        if res.status().is_success() {
+            let data: HasValue<String> = res.json()?;
+            Ok(data.value)
+        } else {
+            let json: serde_json::Value = res.json()?;
+            bail!("Something on close: {:?} / {:?}", res, json);
+        }
+    }
+}
+
+impl Drop for Client {
+    fn drop(&mut self) {
+        if let Err(e) = self.close() {
+            warn!("Closing webdriver client: {:?}", e);
         }
     }
 }
