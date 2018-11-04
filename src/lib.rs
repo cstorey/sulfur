@@ -72,18 +72,13 @@ impl Client {
         }
     }
 
-    pub fn close(&mut self) -> Result<(), Error> {
+    pub fn close(&self) -> Result<(), Error> {
         let uri = self.url.join(&format!(
             "session/{}",
             utf8_percent_encode(&self.session_id, PATH_SEGMENT_ENCODE_SET)
         ))?;
-        let mut res = self.client.delete(uri).send()?;
-        if res.status().is_success() {
-            Ok(())
-        } else {
-            let json: serde_json::Value = res.json()?;
-            bail!("Something on close: {:?} / {:?}", res, json);
-        }
+
+        self.execute(self.client.delete(uri))
     }
 
     pub fn visit(&self, url: &str) -> Result<(), Error> {
@@ -91,13 +86,7 @@ impl Client {
             "session/{}/url",
             utf8_percent_encode(&self.session_id, PATH_SEGMENT_ENCODE_SET)
         ))?;
-        let mut res = self.client.post(uri).json(&json!({ "url": url })).send()?;
-        if res.status().is_success() {
-            Ok(())
-        } else {
-            let json: serde_json::Value = res.json()?;
-            bail!("Something on visit: {:?} / {:?}", res, json);
-        }
+        self.execute(self.client.post(uri).json(&json!({ "url": url })))
     }
 
     pub fn back(&self) -> Result<(), Error> {
@@ -105,26 +94,15 @@ impl Client {
             "session/{}/back",
             utf8_percent_encode(&self.session_id, PATH_SEGMENT_ENCODE_SET)
         ))?;
-        let mut res = self.client.post(uri).send()?;
-        if res.status().is_success() {
-            Ok(())
-        } else {
-            let json: serde_json::Value = res.json()?;
-            bail!("Something on back: {:?} / {:?}", res, json);
-        }
+        self.execute(self.client.post(uri))
     }
+
     pub fn forward(&self) -> Result<(), Error> {
         let uri = self.url.join(&format!(
             "session/{}/forward",
             utf8_percent_encode(&self.session_id, PATH_SEGMENT_ENCODE_SET)
         ))?;
-        let mut res = self.client.post(uri).send()?;
-        if res.status().is_success() {
-            Ok(())
-        } else {
-            let json: serde_json::Value = res.json()?;
-            bail!("Something on forward: {:?} / {:?}", res, json);
-        }
+        self.execute(self.client.post(uri))
     }
 
     pub fn current_url(&self) -> Result<String, Error> {
@@ -132,9 +110,16 @@ impl Client {
             "session/{}/url",
             utf8_percent_encode(&self.session_id, PATH_SEGMENT_ENCODE_SET)
         ))?;
-        let mut res = self.client.get(uri).send()?;
+        self.execute(self.client.get(uri))
+    }
+
+    fn execute<R>(&self, req: reqwest::RequestBuilder) -> Result<R, Error>
+    where
+        R: for<'de> serde::Deserialize<'de>,
+    {
+        let mut res = req.send()?;
         if res.status().is_success() {
-            let data: HasValue<String> = res.json()?;
+            let data: HasValue<R> = res.json()?;
             Ok(data.value)
         } else {
             let json: serde_json::Value = res.json()?;
