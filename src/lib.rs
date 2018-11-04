@@ -11,6 +11,7 @@ extern crate url;
 extern crate log;
 
 use failure::Error;
+use std::fmt;
 use url::percent_encoding::{utf8_percent_encode, PATH_SEGMENT_ENCODE_SET};
 
 #[derive(Debug, Clone)]
@@ -49,6 +50,8 @@ struct WdError {
     value: WdErrorVal,
 }
 
+struct PathSeg<'a>(&'a str);
+
 impl Client {
     pub fn new<U: reqwest::IntoUrl>(url: U, req: NewSessionReq) -> Result<Self, Error> {
         let url = url.into_url()?;
@@ -73,44 +76,32 @@ impl Client {
     }
 
     pub fn close(&self) -> Result<(), Error> {
-        let uri = self.url.join(&format!(
-            "session/{}",
-            utf8_percent_encode(&self.session_id, PATH_SEGMENT_ENCODE_SET)
-        ))?;
-
-        self.execute(self.client.delete(uri))
+        let path = format!("session/{}", PathSeg(&self.session_id));
+        self.execute(self.client.delete(self.url.join(&path)?))
     }
 
     pub fn visit(&self, url: &str) -> Result<(), Error> {
-        let uri = self.url.join(&format!(
-            "session/{}/url",
-            utf8_percent_encode(&self.session_id, PATH_SEGMENT_ENCODE_SET)
-        ))?;
-        self.execute(self.client.post(uri).json(&json!({ "url": url })))
+        let path = format!("session/{}/url", PathSeg(&self.session_id));
+        self.execute(
+            self.client
+                .post(self.url.join(&path)?)
+                .json(&json!({ "url": url })),
+        )
     }
 
     pub fn back(&self) -> Result<(), Error> {
-        let uri = self.url.join(&format!(
-            "session/{}/back",
-            utf8_percent_encode(&self.session_id, PATH_SEGMENT_ENCODE_SET)
-        ))?;
-        self.execute(self.client.post(uri))
+        let path = format!("session/{}/back", PathSeg(&self.session_id));
+        self.execute(self.client.post(self.url.join(&path)?))
     }
 
     pub fn forward(&self) -> Result<(), Error> {
-        let uri = self.url.join(&format!(
-            "session/{}/forward",
-            utf8_percent_encode(&self.session_id, PATH_SEGMENT_ENCODE_SET)
-        ))?;
-        self.execute(self.client.post(uri))
+        let path = format!("session/{}/forward", PathSeg(&self.session_id));
+        self.execute(self.client.post(self.url.join(&path)?))
     }
 
     pub fn current_url(&self) -> Result<String, Error> {
-        let uri = self.url.join(&format!(
-            "session/{}/url",
-            utf8_percent_encode(&self.session_id, PATH_SEGMENT_ENCODE_SET)
-        ))?;
-        self.execute(self.client.get(uri))
+        let path = format!("session/{}/url", PathSeg(&self.session_id));
+        self.execute(self.client.get(self.url.join(&path)?))
     }
 
     fn execute<R>(&self, req: reqwest::RequestBuilder) -> Result<R, Error>
@@ -141,5 +132,16 @@ impl NewSessionReq {
         NewSessionReq {
             desired_capabilities: json!({ "browserName": "chrome" }),
         }
+    }
+}
+
+impl<'a> fmt::Display for PathSeg<'a> {
+    fn fmt(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
+        let &PathSeg(ref val) = self;
+        write!(
+            fmt,
+            "{}",
+            utf8_percent_encode(&val, PATH_SEGMENT_ENCODE_SET)
+        )
     }
 }
