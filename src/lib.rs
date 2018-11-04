@@ -18,7 +18,7 @@ use url::percent_encoding::{utf8_percent_encode, PATH_SEGMENT_ENCODE_SET};
 pub struct Client {
     client: reqwest::Client,
     url: reqwest::Url,
-    session_id: String,
+    session_id: Option<String>,
 }
 #[derive(Debug, Deserialize)]
 struct HasValue<T> {
@@ -66,7 +66,7 @@ impl Client {
             Ok(Client {
                 client: client,
                 url: url,
-                session_id: body.session_id,
+                session_id: Some(body.session_id),
             })
         } else {
             let err: WdError = res.json()?;
@@ -75,13 +75,17 @@ impl Client {
         }
     }
 
-    pub fn close(&self) -> Result<(), Error> {
-        let path = format!("session/{}", PathSeg(&self.session_id));
-        self.execute(self.client.delete(self.url.join(&path)?))
+    pub fn close(&mut self) -> Result<(), Error> {
+        if let Some(session_id) = self.session_id.as_ref() {
+            let path = format!("session/{}", PathSeg(&session_id));
+            self.execute(self.client.delete(self.url.join(&path)?))?;
+        }
+        self.session_id = None;
+        Ok(())
     }
 
     pub fn visit(&self, url: &str) -> Result<(), Error> {
-        let path = format!("session/{}/url", PathSeg(&self.session_id));
+        let path = format!("session/{}/url", PathSeg(self.session()?));
         self.execute(
             self.client
                 .post(self.url.join(&path)?)
@@ -90,17 +94,17 @@ impl Client {
     }
 
     pub fn back(&self) -> Result<(), Error> {
-        let path = format!("session/{}/back", PathSeg(&self.session_id));
+        let path = format!("session/{}/back", PathSeg(self.session()?));
         self.execute(self.client.post(self.url.join(&path)?))
     }
 
     pub fn forward(&self) -> Result<(), Error> {
-        let path = format!("session/{}/forward", PathSeg(&self.session_id));
+        let path = format!("session/{}/forward", PathSeg(self.session()?));
         self.execute(self.client.post(self.url.join(&path)?))
     }
 
     pub fn current_url(&self) -> Result<String, Error> {
-        let path = format!("session/{}/url", PathSeg(&self.session_id));
+        let path = format!("session/{}/url", PathSeg(self.session()?));
         self.execute(self.client.get(self.url.join(&path)?))
     }
 
@@ -116,6 +120,12 @@ impl Client {
             let json: serde_json::Value = res.json()?;
             bail!("Something on close: {:?} / {:?}", res, json);
         }
+    }
+
+    fn session(&self) -> Result<&str, Error> {
+        return self.session_id.as_ref().map(|r| &**r).ok_or_else(
+            || failure::err_msg("No current session")
+        )
     }
 }
 

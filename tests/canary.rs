@@ -6,7 +6,7 @@ const WD_HUB: &'static str = "http://localhost:4444/wd/hub/";
 
 #[test]
 fn can_create_new_session() {
-    let s = Client::new(WD_HUB, NewSessionReq::chrome()).expect("session::new chrome");
+    let mut s = Client::new(WD_HUB, NewSessionReq::chrome()).expect("session::new chrome");
 
     println!("Sess: {:#?}", s);
 
@@ -15,7 +15,7 @@ fn can_create_new_session() {
 
 #[test]
 fn can_navigate() {
-    let s = Client::new(WD_HUB, NewSessionReq::chrome()).expect("session::new chrome");
+    let mut s = Client::new(WD_HUB, NewSessionReq::chrome()).expect("session::new chrome");
 
     let url = "https://en.wikipedia.org/";
     s.visit(url).expect("visit");
