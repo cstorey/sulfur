@@ -46,7 +46,11 @@ impl Client {
         Client::new_with_http(url, req, client)
     }
 
-    pub fn new_with_http<U: reqwest::IntoUrl>(url: U, req: NewSessionReq, client: reqwest::Client) -> Result<Self, Error> {
+    pub fn new_with_http<U: reqwest::IntoUrl>(
+        url: U,
+        req: NewSessionReq,
+        client: reqwest::Client,
+    ) -> Result<Self, Error> {
         let url = url.into_url()?;
         let mut res = client.post(url.join("session")?).json(&req).send()?;
 

@@ -21,7 +21,7 @@ impl ChromeDriver {
         let mut cmd = Command::new("chromedriver");
         cmd.arg(format!("--port={}", port));
         cmd.arg("--silent");
-        // cmd.arg("--verbose")
+        // cmd.arg("--verbose");
         debug!("Starting command: {:?}", cmd);
         let child = cmd.spawn().context("Spawning chrome")?;
 
