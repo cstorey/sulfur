@@ -10,6 +10,8 @@ extern crate url;
 #[macro_use]
 extern crate log;
 
+mod chrome;
 mod client;
 
+pub use chrome::*;
 pub use client::*;

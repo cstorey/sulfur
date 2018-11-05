@@ -1,21 +1,22 @@
+extern crate env_logger;
 extern crate sulfur;
 
 use sulfur::*;
 
-const WD_HUB: &'static str = "http://localhost:4444/wd/hub/";
-
 #[test]
-fn can_create_new_session() {
-    let mut s = Client::new(WD_HUB, NewSessionReq::chrome()).expect("session::new chrome");
-
-    println!("Sess: {:#?}", s);
-
-    s.close().expect("close")
+fn can_run_chromedriver() {
+    env_logger::try_init().unwrap_or_default();
+    let mut driver = ChromeDriver::start().expect("ChromeDriver::start");
+    let mut s = driver.new_session().expect("new_session");
+    s.close().expect("close");
+    driver.close().expect("Close driver");
 }
 
 #[test]
 fn can_navigate() {
-    let mut s = Client::new(WD_HUB, NewSessionReq::chrome()).expect("session::new chrome");
+    env_logger::try_init().unwrap_or_default();
+    let driver = ChromeDriver::start().expect("ChromeDriver::start");
+    let mut s = driver.new_session().expect("new_session");
 
     let url = "https://en.wikipedia.org/";
     s.visit(url).expect("visit");

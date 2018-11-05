@@ -22,7 +22,7 @@ struct NewSessionReply {
 #[derive(Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct NewSessionReq {
-    desired_capabilities: serde_json::Value,
+    pub(crate) desired_capabilities: serde_json::Value,
 }
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -111,9 +111,11 @@ impl Client {
     }
 
     fn session(&self) -> Result<&str, Error> {
-        return self.session_id.as_ref().map(|r| &**r).ok_or_else(
-            || failure::err_msg("No current session")
-        )
+        return self
+            .session_id
+            .as_ref()
+            .map(|r| &**r)
+            .ok_or_else(|| failure::err_msg("No current session"));
     }
 }
 
@@ -121,14 +123,6 @@ impl Drop for Client {
     fn drop(&mut self) {
         if let Err(e) = self.close() {
             warn!("Closing webdriver client: {:?}", e);
-        }
-    }
-}
-
-impl NewSessionReq {
-    pub fn chrome() -> Self {
-        NewSessionReq {
-            desired_capabilities: json!({ "browserName": "chrome" }),
         }
     }
 }
