@@ -42,9 +42,12 @@ struct PathSeg<'a>(&'a str);
 
 impl Client {
     pub fn new<U: reqwest::IntoUrl>(url: U, req: NewSessionReq) -> Result<Self, Error> {
-        let url = url.into_url()?;
         let client = reqwest::Client::new();
+        Client::new_with_http(url, req, client)
+    }
 
+    pub fn new_with_http<U: reqwest::IntoUrl>(url: U, req: NewSessionReq, client: reqwest::Client) -> Result<Self, Error> {
+        let url = url.into_url()?;
         let mut res = client.post(url.join("session")?).json(&req).send()?;
 
         // eprintln!("Response: {:?}", res);

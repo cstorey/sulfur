@@ -1,22 +1,26 @@
 extern crate env_logger;
 extern crate sulfur;
+#[macro_use]
+extern crate lazy_static;
+
 
 use sulfur::*;
+
+lazy_static! {
+    static ref DRIVER: ChromeDriver = ChromeDriver::start().expect("ChromeDriver::start");
+}
 
 #[test]
 fn can_run_chromedriver() {
     env_logger::try_init().unwrap_or_default();
-    let mut driver = ChromeDriver::start().expect("ChromeDriver::start");
-    let mut s = driver.new_session().expect("new_session");
+    let mut s = DRIVER.new_session().expect("new_session");
     s.close().expect("close");
-    driver.close().expect("Close driver");
 }
 
 #[test]
 fn can_navigate() {
     env_logger::try_init().unwrap_or_default();
-    let driver = ChromeDriver::start().expect("ChromeDriver::start");
-    let mut s = driver.new_session().expect("new_session");
+    let mut s = DRIVER.new_session().expect("new_session");
 
     let url = "https://en.wikipedia.org/";
     s.visit(url).expect("visit");

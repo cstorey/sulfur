@@ -27,19 +27,21 @@ impl ChromeDriver {
 
         let mut driver = ChromeDriver { child, port, http };
 
-        let mut pausetime = time::Duration::from_millis(1);
+        let mut pause_time = time::Duration::from_millis(1);
         while !driver.is_healthy() {
             driver.ensure_still_alive()?;
-            debug!("Pausing for {:?}", pausetime);
-            thread::sleep(pausetime);
-            pausetime *= 2;
+            debug!("Pausing for {:?}", pause_time);
+            thread::sleep(pause_time);
+            pause_time *= 2;
         }
+        info!("Setup done! running on port {:?}", driver.port);
 
         Ok(driver)
     }
 
     pub fn new_session(&self) -> Result<Client, Error> {
-        let client = Client::new(&self.url(), chrome_session_req())?;
+        info!("Starting new session from instance at {}", self.port);
+        let client = Client::new_with_http(&self.url(), chrome_session_req(), self.http.clone())?;
         Ok(client)
     }
 
@@ -80,6 +82,7 @@ impl ChromeDriver {
 
 impl Drop for ChromeDriver {
     fn drop(&mut self) {
+        debug!("Dropping child");
         let _ = self.child.kill();
     }
 }
