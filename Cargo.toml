@@ -17,3 +17,5 @@ url = "1.7.1"
 [dev-dependencies]
 futures = "0.1.25"
 hyper = "0.12.13"
+tokio = "0.1.11"
+warp = "0.1.9"

@@ -3,17 +3,22 @@ extern crate sulfur;
 #[macro_use]
 extern crate lazy_static;
 extern crate futures;
-extern crate hyper;
+extern crate tokio;
+extern crate warp;
+#[macro_use]
+extern crate log;
 
-use hyper::rt::Future;
-use hyper::service::service_fn_ok;
-use hyper::{Body, Request, Response, Server};
-use std::thread;
+use std::net::SocketAddr;
+use std::sync::Mutex;
 
+use futures::sync::oneshot;
 use sulfur::*;
+use tokio::runtime;
 
 lazy_static! {
     static ref DRIVER: ChromeDriver = ChromeDriver::start().expect("ChromeDriver::start");
+    static ref RT: Mutex<runtime::Runtime> =
+        Mutex::new(runtime::Runtime::new().expect("tokio runtime"));
 }
 
 #[test]
@@ -23,12 +28,38 @@ fn can_run_chromedriver() {
     s.close().expect("close");
 }
 
-struct OnDrop<F: FnOnce()>(Option<F>);
+struct TestServer {
+    drop: Option<oneshot::Sender<()>>,
+    addr: SocketAddr,
+}
 
-impl<F: FnOnce()> Drop for OnDrop<F> {
+// ... Oh god. Maybe I should just use warp.
+// At least I can make that work.
+// https://github.com/seanmonstar/warp/blob/master/examples/returning.rs
+// https://github.com/seanmonstar/warp/blob/master/examples/dir.rs
+impl TestServer {
+    fn start<S, R>(f: S) -> Self
+    where
+        S: warp::Filter<Extract = (R,), Error = warp::Rejection> + Sync + Send + 'static,
+        R: warp::Reply,
+    {
+        let (tx, rx) = oneshot::channel::<()>();
+
+        let (addr, server) = warp::serve(f).bind_with_graceful_shutdown(([127, 0, 0, 1], 0), rx);
+
+        RT.lock().expect("lock runtime").spawn(server);
+
+        TestServer {
+            drop: Some(tx),
+            addr: addr,
+        }
+    }
+}
+
+impl Drop for TestServer {
     fn drop(&mut self) {
-        if let Some(f) = self.0.take() {
-            f()
+        if let Some(tx) = self.drop.take() {
+            tx.send(()).expect("Send shutdown signal");
         }
     }
 }
@@ -37,26 +68,11 @@ impl<F: FnOnce()> Drop for OnDrop<F> {
 fn can_navigate() {
     env_logger::try_init().unwrap_or_default();
 
-    const PHRASE: &str = "Hello, World!";
+    debug!("Starting test server...");
+    let serv = TestServer::start(warp::fs::dir("sulfur/test/html"));
+    let url = format!("http://{}:{}/", serv.addr.ip(), serv.addr.port());
+    debug!("Test server at {}", url);
 
-    fn hello_world(_req: Request<Body>) -> Response<Body> {
-        Response::new(Body::from(PHRASE))
-    }
-
-    let server = Server::bind(&([127, 0, 0, 1], 0).into()).serve(|| service_fn_ok(hello_world));
-
-    let (tx, rx) = futures::sync::oneshot::channel::<()>();
-
-    let laddr = server.local_addr();
-
-    let graceful = server
-        .with_graceful_shutdown(rx)
-        .map_err(|err| eprintln!("server error: {}", err));
-
-    thread::spawn(move || hyper::rt::run(graceful)).expect("spawn server thread");
-    let _dropper = OnDrop(Some(|| tx.send(()).expect("send")));
-
-    let url = format!("http://{}:{}/", laddr.ip(), laddr.port());
     let mut s = DRIVER.new_session().expect("new_session");
 
     s.visit(&url).expect("visit");
