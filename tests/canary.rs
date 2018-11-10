@@ -15,6 +15,8 @@ use futures::sync::oneshot;
 use sulfur::*;
 use tokio::runtime;
 
+const TEST_HTML_DIR: &'static str = concat!(env!("CARGO_MANIFEST_DIR", "/test/html"));
+
 lazy_static! {
     static ref DRIVER: ChromeDriver = ChromeDriver::start().expect("ChromeDriver::start");
     static ref RT: Mutex<runtime::Runtime> =
@@ -69,7 +71,7 @@ fn can_navigate() {
     env_logger::try_init().unwrap_or_default();
 
     debug!("Starting test server...");
-    let serv = TestServer::start(warp::fs::dir("sulfur/test/html"));
+    let serv = TestServer::start(warp::fs::dir(TEST_HTML_DIR));
     let url = format!("http://{}:{}/", serv.addr.ip(), serv.addr.port());
     debug!("Test server at {}", url);
 
