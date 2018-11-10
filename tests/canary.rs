@@ -15,7 +15,7 @@ use futures::sync::oneshot;
 use sulfur::*;
 use tokio::runtime;
 
-const TEST_HTML_DIR: &'static str = concat!(env!("CARGO_MANIFEST_DIR", "/test/html"));
+const TEST_HTML_DIR: &'static str = concat!(env!("CARGO_MANIFEST_DIR", "/tests/html"));
 
 lazy_static! {
     static ref DRIVER: ChromeDriver = ChromeDriver::start().expect("ChromeDriver::start");
