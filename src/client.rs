@@ -10,6 +10,7 @@ pub struct Client {
 }
 #[derive(Debug, Deserialize)]
 struct HasValue<T> {
+    status: u64,
     value: T,
 }
 
@@ -36,6 +37,28 @@ struct WdErrorVal {
 struct WdError {
     status: u64,
     value: WdErrorVal,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct By {
+    using: String,
+    value: String,
+}
+
+impl By {
+    pub fn css<S: Into<String>>(expr: S) -> Self {
+        By {
+            using: "css selector".into(),
+            value: expr.into(),
+        }
+    }
+}
+
+#[derive(Debug, Deserialize, Clone)]
+pub struct Element {
+    #[serde(rename = "ELEMENT")]
+    id: String,
 }
 
 struct PathSeg<'a>(&'a str);
@@ -101,6 +124,26 @@ impl Client {
     pub fn current_url(&self) -> Result<String, Error> {
         let path = format!("session/{}/url", PathSeg(self.session()?));
         self.execute(self.client.get(self.url.join(&path)?))
+    }
+
+    pub fn find_element(&self, by: &By) -> Result<Element, Error> {
+        let path = format!("session/{}/element", PathSeg(self.session()?));
+        let req = self.client.post(self.url.join(&path)?).json(by);
+        let result = self.execute(req)?;
+
+        Ok(result)
+    }
+
+    pub fn text(&self, elt: &Element) -> Result<String, Error> {
+        let path = format!(
+            "session/{}/element/{}/text",
+            PathSeg(self.session()?),
+            elt.id
+        );
+        let req = self.client.get(self.url.join(&path)?);
+        let result = self.execute(req)?;
+
+        Ok(result)
     }
 
     fn execute<R>(&self, req: reqwest::RequestBuilder) -> Result<R, Error>

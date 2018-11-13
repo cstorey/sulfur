@@ -15,14 +15,14 @@ use futures::sync::oneshot;
 use sulfur::*;
 use tokio::runtime;
 
-const TEST_HTML_DIR: &'static str = concat!(env!("CARGO_MANIFEST_DIR", "/tests/html"));
+const TEST_HTML_DIR: &'static str = concat!(env!("CARGO_MANIFEST_DIR"), "/tests/html");
 
 lazy_static! {
     static ref DRIVER: ChromeDriver = ChromeDriver::start().expect("ChromeDriver::start");
     static ref RT: Mutex<runtime::Runtime> =
         Mutex::new(runtime::Runtime::new().expect("tokio runtime"));
     static ref SERVER: TestServer = {
-        debug!("Starting test server...");
+        debug!("Starting test server for {}", TEST_HTML_DIR);
         let srv = TestServer::start(warp::fs::dir(TEST_HTML_DIR));
         debug!("Test server at {}", srv.url());
         srv
@@ -65,7 +65,6 @@ impl TestServer {
     fn url(&self) -> String {
         format!("http://{}:{}/", self.addr.ip(), self.addr.port())
     }
-
 }
 
 impl Drop for TestServer {
@@ -116,4 +115,20 @@ fn can_navigate() {
     );
 
     s.close().expect("close")
+}
+
+#[test]
+fn find_text() {
+    env_logger::try_init().unwrap_or_default();
+
+    let url = SERVER.url();
+    let mut s = DRIVER.new_session().expect("new_session");
+
+    s.visit(&url).expect("visit");
+    let elt = s.find_element(&By::css("#an-id")).expect("found element");
+
+    println!("Elt: {:?}", elt);
+
+    let text_content = s.text(&elt).expect("read text");
+    assert_eq!(text_content.trim(), "Hello world");
 }
