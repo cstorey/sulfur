@@ -21,6 +21,12 @@ lazy_static! {
     static ref DRIVER: ChromeDriver = ChromeDriver::start().expect("ChromeDriver::start");
     static ref RT: Mutex<runtime::Runtime> =
         Mutex::new(runtime::Runtime::new().expect("tokio runtime"));
+    static ref SERVER: TestServer = {
+        debug!("Starting test server...");
+        let srv = TestServer::start(warp::fs::dir(TEST_HTML_DIR));
+        debug!("Test server at {}", srv.url());
+        srv
+    };
 }
 
 #[test]
@@ -56,6 +62,10 @@ impl TestServer {
             addr: addr,
         }
     }
+    fn url(&self) -> String {
+        format!("http://{}:{}/", self.addr.ip(), self.addr.port())
+    }
+
 }
 
 impl Drop for TestServer {
@@ -70,10 +80,7 @@ impl Drop for TestServer {
 fn can_navigate() {
     env_logger::try_init().unwrap_or_default();
 
-    debug!("Starting test server...");
-    let serv = TestServer::start(warp::fs::dir(TEST_HTML_DIR));
-    let url = format!("http://{}:{}/", serv.addr.ip(), serv.addr.port());
-    debug!("Test server at {}", url);
+    let url = SERVER.url();
 
     let mut s = DRIVER.new_session().expect("new_session");
 
