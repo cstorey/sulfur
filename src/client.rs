@@ -9,9 +9,15 @@ pub struct Client {
     session_id: Option<String>,
 }
 #[derive(Debug, Deserialize)]
-struct HasValue<T> {
+struct HasValue {
     status: u64,
-    value: T,
+    value: serde_json::Value,
+}
+
+impl HasValue {
+    fn parse<T: serde::de::DeserializeOwned>(&self) -> Result<T, Error> {
+        Ok(serde_json::from_value(self.value.clone())?)
+    }
 }
 
 #[derive(Debug, Deserialize)]
@@ -32,11 +38,17 @@ struct WdErrorVal {
     message: String,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Fail)]
 #[serde(rename_all = "camelCase")]
 struct WdError {
     status: u64,
     value: WdErrorVal,
+}
+
+impl fmt::Display for WdError {
+    fn fmt(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
+        write!(fmt, "{}", self.value.message)
+    }
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -152,8 +164,16 @@ impl Client {
     {
         let mut res = req.send()?;
         if res.status().is_success() {
-            let data: HasValue<R> = res.json()?;
-            Ok(data.value)
+            let data: HasValue = res.json()?;
+            if data.status == 0 {
+                Ok(data.parse()?)
+            } else {
+                let value: WdErrorVal = data.parse()?;
+                Err(WdError {
+                    status: data.status,
+                    value: value,
+                }.into())
+            }
         } else {
             let json: serde_json::Value = res.json()?;
             bail!("Something on close: {:?} / {:?}", res, json);
