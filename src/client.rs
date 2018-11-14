@@ -152,6 +152,28 @@ impl Client {
         Ok(result)
     }
 
+    pub fn find_element_from(&self, elt: &Element, by: &By) -> Result<Element, Error> {
+        let path = format!(
+            "session/{}/element/{}/element",
+            PathSeg(self.session()?),
+            PathSeg(&elt.id)
+        );
+        let req = self.client.post(self.url.join(&path)?).json(by);
+        let result = self.execute(req)?;
+
+        Ok(result)
+    }
+    pub fn find_elements_from(&self, elt: &Element, by: &By) -> Result<Vec<Element>, Error> {
+        let path = format!(
+            "session/{}/element/{}/elements",
+            PathSeg(self.session()?),
+            PathSeg(&elt.id)
+        );
+        let req = self.client.post(self.url.join(&path)?).json(by);
+        let result = self.execute(req)?;
+
+        Ok(result)
+    }
     pub fn text(&self, elt: &Element) -> Result<String, Error> {
         let path = format!(
             "session/{}/element/{}/text",
