@@ -118,17 +118,41 @@ fn can_navigate() {
 }
 
 #[test]
-fn find_text() {
+fn find_text_present() {
     env_logger::try_init().unwrap_or_default();
 
     let url = SERVER.url();
-    let mut s = DRIVER.new_session().expect("new_session");
+    let s = DRIVER.new_session().expect("new_session");
 
     s.visit(&url).expect("visit");
-    let elt = s.find_element(&By::css("#an-id")).expect("found element");
-
+    let elt = s.find_element(&By::css("#an-id")).expect("find #an-id");
     println!("Elt: {:?}", elt);
-
     let text_content = s.text(&elt).expect("read text");
     assert_eq!(text_content.trim(), "Hello world");
+}
+
+#[test]
+fn find_multiple_elements() {
+    env_logger::try_init().unwrap_or_default();
+
+    let url = SERVER.url();
+    let s = DRIVER.new_session().expect("new_session");
+
+    s.visit(&url).expect("visit");
+    let elts = s
+        .find_elements(&By::css("#missing-element"))
+        .expect("find #an-id");
+    println!("Elt: {:?}", elts);
+    assert!(elts.is_empty(), "Element {:?} should be None", elts);
+
+    let elts = s
+        .find_elements(&By::css(".three-of-these"))
+        .expect("find .three-of-these");
+
+    println!("Elt: {:?}", elts);
+    assert!(
+        elts.len() == 3,
+        "Element {:?} should be have three items",
+        elts
+    )
 }

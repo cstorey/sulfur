@@ -34,7 +34,6 @@ pub struct NewSessionReq {
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
 struct WdErrorVal {
-    error: String,
     message: String,
 }
 
@@ -140,6 +139,13 @@ impl Client {
 
     pub fn find_element(&self, by: &By) -> Result<Element, Error> {
         let path = format!("session/{}/element", PathSeg(self.session()?));
+        let req = self.client.post(self.url.join(&path)?).json(by);
+        let result = self.execute(req)?;
+
+        Ok(result)
+    }
+    pub fn find_elements(&self, by: &By) -> Result<Vec<Element>, Error> {
+        let path = format!("session/{}/elements", PathSeg(self.session()?));
         let req = self.client.post(self.url.join(&path)?).json(by);
         let result = self.execute(req)?;
 
