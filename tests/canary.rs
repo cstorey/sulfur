@@ -20,6 +20,11 @@ const TEST_HTML_DIR: &'static str = concat!(env!("CARGO_MANIFEST_DIR"), "/tests/
 
 lazy_static! {
     static ref DRIVER: chrome::Driver = chrome::Driver::start().expect("ChromeDriver::start");
+    static ref CONFIG: chrome::Config = {
+        let mut d = chrome::Config::default();
+        d.headless(true);
+        d
+    };
     static ref RT: Mutex<runtime::Runtime> =
         Mutex::new(runtime::Runtime::new().expect("tokio runtime"));
     static ref SERVER: TestServer = {
@@ -33,7 +38,7 @@ lazy_static! {
 #[test]
 fn can_run_chromedriver() {
     env_logger::try_init().unwrap_or_default();
-    let mut s = DRIVER.new_session().expect("new_session");
+    let mut s = DRIVER.new_session_config(&CONFIG).expect("new_session");
     s.close().expect("close");
 }
 
@@ -82,7 +87,7 @@ fn can_navigate() {
 
     let url = SERVER.url();
 
-    let mut s = DRIVER.new_session().expect("new_session");
+    let mut s = DRIVER.new_session_config(&CONFIG).expect("new_session");
 
     s.visit(&url).expect("visit");
 
@@ -123,7 +128,7 @@ fn find_text_present() {
     env_logger::try_init().unwrap_or_default();
 
     let url = SERVER.url();
-    let s = DRIVER.new_session().expect("new_session");
+    let s = DRIVER.new_session_config(&CONFIG).expect("new_session");
 
     s.visit(&url).expect("visit");
     let elt = s.find_element(&By::css("#an-id")).expect("find #an-id");
@@ -137,7 +142,7 @@ fn find_multiple_elements() {
     env_logger::try_init().unwrap_or_default();
 
     let url = SERVER.url();
-    let s = DRIVER.new_session().expect("new_session");
+    let s = DRIVER.new_session_config(&CONFIG).expect("new_session");
 
     s.visit(&url).expect("visit");
     let elts = s
@@ -163,7 +168,7 @@ fn find_text_present_from_child() {
     env_logger::try_init().unwrap_or_default();
 
     let url = SERVER.url();
-    let s = DRIVER.new_session().expect("new_session");
+    let s = DRIVER.new_session_config(&CONFIG).expect("new_session");
 
     s.visit(&url).expect("visit");
     let parent = s
@@ -182,7 +187,7 @@ fn find_multiple_elements_from_child() {
     env_logger::try_init().unwrap_or_default();
 
     let url = SERVER.url();
-    let s = DRIVER.new_session().expect("new_session");
+    let s = DRIVER.new_session_config(&CONFIG).expect("new_session");
 
     s.visit(&url).expect("visit");
     let parent = s
