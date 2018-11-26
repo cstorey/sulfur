@@ -107,7 +107,7 @@ impl Client {
     pub fn close(&mut self) -> Result<(), Error> {
         if let Some(session_id) = self.session_id.as_ref() {
             let path = format!("session/{}", PathSeg(&session_id));
-            self.execute(self.client.delete(self.url.join(&path)?))?;
+            execute(self.client.delete(self.url.join(&path)?))?;
         }
         self.session_id = None;
         Ok(())
@@ -115,7 +115,7 @@ impl Client {
 
     pub fn visit(&self, url: &str) -> Result<(), Error> {
         let path = format!("session/{}/url", PathSeg(self.session()?));
-        self.execute(
+        execute(
             self.client
                 .post(self.url.join(&path)?)
                 .json(&json!({ "url": url })),
@@ -124,30 +124,30 @@ impl Client {
 
     pub fn back(&self) -> Result<(), Error> {
         let path = format!("session/{}/back", PathSeg(self.session()?));
-        self.execute(self.client.post(self.url.join(&path)?))
+        execute(self.client.post(self.url.join(&path)?))
     }
 
     pub fn forward(&self) -> Result<(), Error> {
         let path = format!("session/{}/forward", PathSeg(self.session()?));
-        self.execute(self.client.post(self.url.join(&path)?))
+        execute(self.client.post(self.url.join(&path)?))
     }
 
     pub fn current_url(&self) -> Result<String, Error> {
         let path = format!("session/{}/url", PathSeg(self.session()?));
-        self.execute(self.client.get(self.url.join(&path)?))
+        execute(self.client.get(self.url.join(&path)?))
     }
 
     pub fn find_element(&self, by: &By) -> Result<Element, Error> {
         let path = format!("session/{}/element", PathSeg(self.session()?));
         let req = self.client.post(self.url.join(&path)?).json(by);
-        let result = self.execute(req)?;
+        let result = execute(req)?;
 
         Ok(result)
     }
     pub fn find_elements(&self, by: &By) -> Result<Vec<Element>, Error> {
         let path = format!("session/{}/elements", PathSeg(self.session()?));
         let req = self.client.post(self.url.join(&path)?).json(by);
-        let result = self.execute(req)?;
+        let result = execute(req)?;
 
         Ok(result)
     }
@@ -159,7 +159,7 @@ impl Client {
             PathSeg(&elt.id)
         );
         let req = self.client.post(self.url.join(&path)?).json(by);
-        let result = self.execute(req)?;
+        let result = execute(req)?;
 
         Ok(result)
     }
@@ -170,7 +170,7 @@ impl Client {
             PathSeg(&elt.id)
         );
         let req = self.client.post(self.url.join(&path)?).json(by);
-        let result = self.execute(req)?;
+        let result = execute(req)?;
 
         Ok(result)
     }
@@ -181,31 +181,9 @@ impl Client {
             elt.id
         );
         let req = self.client.get(self.url.join(&path)?);
-        let result = self.execute(req)?;
+        let result = execute(req)?;
 
         Ok(result)
-    }
-
-    fn execute<R>(&self, req: reqwest::RequestBuilder) -> Result<R, Error>
-    where
-        R: for<'de> serde::Deserialize<'de>,
-    {
-        let mut res = req.send()?;
-        if res.status().is_success() {
-            let data: HasValue = res.json()?;
-            if data.status == 0 {
-                Ok(data.parse()?)
-            } else {
-                let value: WdErrorVal = data.parse()?;
-                Err(WdError {
-                    status: data.status,
-                    value: value,
-                }.into())
-            }
-        } else {
-            let json: serde_json::Value = res.json()?;
-            bail!("Something on close: {:?} / {:?}", res, json);
-        }
     }
 
     fn session(&self) -> Result<&str, Error> {
@@ -233,5 +211,27 @@ impl<'a> fmt::Display for PathSeg<'a> {
             "{}",
             utf8_percent_encode(&val, PATH_SEGMENT_ENCODE_SET)
         )
+    }
+}
+
+fn execute<R>(req: reqwest::RequestBuilder) -> Result<R, Error>
+where
+    R: for<'de> serde::Deserialize<'de>,
+{
+    let mut res = req.send()?;
+    if res.status().is_success() {
+        let data: HasValue = res.json()?;
+        if data.status == 0 {
+            Ok(data.parse()?)
+        } else {
+            let value: WdErrorVal = data.parse()?;
+            Err(WdError {
+                status: data.status,
+                value: value,
+            }.into())
+        }
+    } else {
+        let json: serde_json::Value = res.json()?;
+        bail!("Something on close: {:?} / {:?}", res, json);
     }
 }
