@@ -214,15 +214,14 @@ impl<'a> fmt::Display for PathSeg<'a> {
     }
 }
 
-fn execute<R>(req: reqwest::RequestBuilder) -> Result<R, Error>
+fn execute_unparsed(req: reqwest::RequestBuilder) -> Result<HasValue, Error>
 where
-    R: for<'de> serde::Deserialize<'de>,
 {
     let mut res = req.send()?;
     if res.status().is_success() {
         let data: HasValue = res.json()?;
         if data.status == 0 {
-            Ok(data.parse()?)
+            Ok(data)
         } else {
             let value: WdErrorVal = data.parse()?;
             Err(WdError {
@@ -234,4 +233,11 @@ where
         let json: serde_json::Value = res.json()?;
         bail!("Something on close: {:?} / {:?}", res, json);
     }
+}
+
+fn execute<R>(req: reqwest::RequestBuilder) -> Result<R, Error>
+where
+    R: for<'de> serde::Deserialize<'de>,
+{
+    Ok(execute_unparsed(req)?.parse()?)
 }
