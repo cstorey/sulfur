@@ -9,8 +9,12 @@ pub struct Client {
     session_id: Option<String>,
 }
 #[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
 struct HasValue {
     status: u64,
+    // If we find that anything other than Chromedriver doesn't
+    // support this, we'll need to revise how we handle `execute` below.
+    session_id: String,
     value: serde_json::Value,
 }
 
@@ -18,12 +22,6 @@ impl HasValue {
     fn parse<T: serde::de::DeserializeOwned>(&self) -> Result<T, Error> {
         Ok(serde_json::from_value(self.value.clone())?)
     }
-}
-
-#[derive(Debug, Deserialize)]
-#[serde(rename_all = "camelCase")]
-struct NewSessionReply {
-    session_id: String,
 }
 
 #[derive(Debug, Serialize)]
@@ -86,22 +84,13 @@ impl Client {
         client: reqwest::Client,
     ) -> Result<Self, Error> {
         let url = url.into_url()?;
-        let mut res = client.post(url.join("session")?).json(&req).send()?;
+        let body = execute_unparsed(client.post(url.join("session")?).json(&req))?;
 
-        // eprintln!("Response: {:?}", res);
-
-        if res.status().is_success() {
-            let body: NewSessionReply = res.json()?;
-            Ok(Client {
-                client: client,
-                url: url,
-                session_id: Some(body.session_id),
-            })
-        } else {
-            let err: WdError = res.json()?;
-            eprintln!("{}", err.value.message);
-            bail!("Something bad: {:?} / {:?}", res, err);
-        }
+        Ok(Client {
+            client: client,
+            url: url,
+            session_id: Some(body.session_id),
+        })
     }
 
     pub fn close(&mut self) -> Result<(), Error> {
@@ -231,7 +220,7 @@ where
         }
     } else {
         let json: serde_json::Value = res.json()?;
-        bail!("Something on close: {:?} / {:?}", res, json);
+        bail!("Error on execution: {:?} / {:?}", res, json);
     }
 }
 
