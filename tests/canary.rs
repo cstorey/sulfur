@@ -12,13 +12,14 @@ use std::net::SocketAddr;
 use std::sync::Mutex;
 
 use futures::sync::oneshot;
+use sulfur::chrome;
 use sulfur::*;
 use tokio::runtime;
 
 const TEST_HTML_DIR: &'static str = concat!(env!("CARGO_MANIFEST_DIR"), "/tests/html");
 
 lazy_static! {
-    static ref DRIVER: ChromeDriver = ChromeDriver::start().expect("ChromeDriver::start");
+    static ref DRIVER: chrome::Driver = chrome::Driver::start().expect("ChromeDriver::start");
     static ref RT: Mutex<runtime::Runtime> =
         Mutex::new(runtime::Runtime::new().expect("tokio runtime"));
     static ref SERVER: TestServer = {

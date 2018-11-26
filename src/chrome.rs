@@ -7,13 +7,13 @@ use std::{thread, time};
 
 use failure::ResultExt;
 
-pub struct ChromeDriver {
+pub struct Driver {
     child: Child,
     port: u16,
     http: reqwest::Client,
 }
 
-impl ChromeDriver {
+impl Driver {
     pub fn start() -> Result<Self, Error> {
         let http = reqwest::Client::new();
         let port = unused_port_no()?;
@@ -25,7 +25,7 @@ impl ChromeDriver {
         debug!("Starting command: {:?}", cmd);
         let child = cmd.spawn().context("Spawning chrome")?;
 
-        let mut driver = ChromeDriver { child, port, http };
+        let mut driver = Driver { child, port, http };
 
         let mut pause_time = time::Duration::from_millis(1);
         while !driver.is_healthy() {
@@ -80,7 +80,7 @@ impl ChromeDriver {
     }
 }
 
-impl Drop for ChromeDriver {
+impl Drop for Driver {
     fn drop(&mut self) {
         debug!("Dropping child");
         let _ = self.child.kill();
