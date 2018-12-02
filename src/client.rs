@@ -167,7 +167,7 @@ impl Client {
         let path = format!(
             "session/{}/element/{}/text",
             PathSeg(self.session()?),
-            elt.id
+            PathSeg(&elt.id)
         );
         let req = self.client.get(self.url.join(&path)?);
         let result = execute(req)?;
