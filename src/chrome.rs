@@ -64,6 +64,7 @@ impl Driver {
         format!("http://127.0.0.1:{}/", self.port)
     }
 
+    // §8.3 Status
     fn is_healthy(&self) -> bool {
         let url = format!("{}status", self.url());
         match self.http.get(&url).send() {

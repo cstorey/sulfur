@@ -55,6 +55,7 @@ pub struct By {
     value: String,
 }
 
+// See §11.2.1 Locator strategies
 impl By {
     pub fn css<S: Into<String>>(expr: S) -> Self {
         By {
@@ -78,6 +79,7 @@ impl Client {
         Client::new_with_http(url, req, client)
     }
 
+    // §8.1 Creating a new session
     pub fn new_with_http<U: reqwest::IntoUrl>(
         url: U,
         req: NewSessionReq,
@@ -92,7 +94,7 @@ impl Client {
             session_id: Some(body.session_id),
         })
     }
-
+    // §8.1 Delete session
     pub fn close(&mut self) -> Result<(), Error> {
         if let Some(session_id) = self.session_id.as_ref() {
             let path = format!("session/{}", PathSeg(&session_id));
@@ -102,6 +104,7 @@ impl Client {
         Ok(())
     }
 
+    // §9.1 Navigate To
     pub fn visit(&self, url: &str) -> Result<(), Error> {
         let path = format!("session/{}/url", PathSeg(self.session()?));
         execute(
@@ -110,22 +113,25 @@ impl Client {
                 .json(&json!({ "url": url })),
         )
     }
-
+    // §9.3 Back
     pub fn back(&self) -> Result<(), Error> {
         let path = format!("session/{}/back", PathSeg(self.session()?));
         execute(self.client.post(self.url.join(&path)?))
     }
 
+    // §9.4 Forward
     pub fn forward(&self) -> Result<(), Error> {
         let path = format!("session/{}/forward", PathSeg(self.session()?));
         execute(self.client.post(self.url.join(&path)?))
     }
 
+    // §9.2 Get Current URL
     pub fn current_url(&self) -> Result<String, Error> {
         let path = format!("session/{}/url", PathSeg(self.session()?));
         execute(self.client.get(self.url.join(&path)?))
     }
 
+    // §11.2.2 Find Element
     pub fn find_element(&self, by: &By) -> Result<Element, Error> {
         let path = format!("session/{}/element", PathSeg(self.session()?));
         let req = self.client.post(self.url.join(&path)?).json(by);
@@ -133,6 +139,8 @@ impl Client {
 
         Ok(result)
     }
+
+    // §11.2.3 Find Elements
     pub fn find_elements(&self, by: &By) -> Result<Vec<Element>, Error> {
         let path = format!("session/{}/elements", PathSeg(self.session()?));
         let req = self.client.post(self.url.join(&path)?).json(by);
@@ -141,6 +149,7 @@ impl Client {
         Ok(result)
     }
 
+    // §11.2.4 Find Element From Element
     pub fn find_element_from(&self, elt: &Element, by: &By) -> Result<Element, Error> {
         let path = format!(
             "session/{}/element/{}/element",
@@ -152,6 +161,8 @@ impl Client {
 
         Ok(result)
     }
+
+    // §11.2.5 Find Elements From Element
     pub fn find_elements_from(&self, elt: &Element, by: &By) -> Result<Vec<Element>, Error> {
         let path = format!(
             "session/{}/element/{}/elements",
@@ -163,6 +174,8 @@ impl Client {
 
         Ok(result)
     }
+
+    // §11.3.5 Get Element Text
     pub fn text(&self, elt: &Element) -> Result<String, Error> {
         let path = format!(
             "session/{}/element/{}/text",
@@ -175,6 +188,20 @@ impl Client {
         Ok(result)
     }
 
+    // §11.3.6 Get Element Tag Name
+    pub fn name(&self, elt: &Element) -> Result<String, Error> {
+        let path = format!(
+            "session/{}/element/{}/name",
+            PathSeg(self.session()?),
+            PathSeg(&elt.id)
+        );
+        let req = self.client.get(self.url.join(&path)?);
+        let result = execute(req)?;
+
+        Ok(result)
+    }
+
+    // §11.4.1 Element Click
     pub fn click(&self, elt: &Element) -> Result<(), Error> {
         let path = format!(
             "session/{}/element/{}/click",
