@@ -7,11 +7,13 @@ extern crate tokio;
 extern crate warp;
 #[macro_use]
 extern crate log;
+extern crate url;
 
 use std::net::SocketAddr;
 use std::sync::Mutex;
 
 use futures::sync::oneshot;
+use std::collections::BTreeMap;
 use sulfur::chrome;
 use sulfur::*;
 use tokio::runtime;
@@ -138,6 +140,20 @@ fn find_text_present() {
 }
 
 #[test]
+fn find_tag_name() {
+    env_logger::try_init().unwrap_or_default();
+
+    let url = SERVER.url();
+    let s = DRIVER.new_session_config(&CONFIG).expect("new_session");
+
+    s.visit(&url).expect("visit");
+    let elt = s.find_element(&By::css("#an-id")).expect("find #an-id");
+    println!("Elt: {:?}", elt);
+    let tag_name = s.name(&elt).expect("read tag name");
+    assert_eq!(tag_name, "p");
+}
+
+#[test]
 fn find_multiple_elements() {
     env_logger::try_init().unwrap_or_default();
 
@@ -227,4 +243,36 @@ fn should_click_links() {
     let new_page = s.current_url().expect("current_url");
 
     assert_ne!(new_page, main_page);
+}
+
+#[test]
+fn form_submission() {
+    env_logger::try_init().unwrap_or_default();
+
+    let url = SERVER.url();
+    let s = DRIVER.new_session_config(&CONFIG).expect("new_session");
+    s.visit(&url).expect("visit");
+    let text = s
+        .find_element(&By::css("#the-form input[type='text']"))
+        .expect("find text");
+    let () = s.send_keys(&text, "Canary text").expect("send_keys");
+
+    let button = s
+        .find_element(&By::css("#the-form button"))
+        .expect("find button");
+    let () = s.click(&button).expect("click");
+    let url = s.current_url().expect("current_url");
+    let url = url::Url::parse(&url).expect("parse url");
+    let q = url
+        .query_pairs()
+        .map(|(k, v)| (k.into_owned(), v.into_owned()))
+        .collect::<BTreeMap<_, _>>();
+
+    assert_eq!(
+        q.get("text"),
+        Some(&"Canary text".to_string()),
+        "Query text:{:?} from URL {:?}",
+        q.get("text"),
+        url
+    )
 }

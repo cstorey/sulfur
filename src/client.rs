@@ -213,6 +213,18 @@ impl Client {
         Ok(())
     }
 
+    // §11.4.3 Element Send Keys
+    pub fn send_keys(&self, elt: &Element, keys: &'static str) -> Result<(), Error> {
+        let url = self.url.join(&format!(
+            "session/{}/element/{}/value",
+            PathSeg(self.session()?),
+            PathSeg(&elt.id)
+        ))?;
+        let () = execute(self.client.post(url).json(&json!({ "value": [keys] })))?;
+
+        Ok(())
+    }
+
     fn session(&self) -> Result<&str, Error> {
         return self
             .session_id
