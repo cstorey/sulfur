@@ -208,7 +208,7 @@ impl Client {
             PathSeg(self.session()?),
             PathSeg(&elt.id)
         );
-        let () = execute(self.client.post(self.url.join(&path)?))?;
+        execute(self.client.post(self.url.join(&path)?))?;
 
         Ok(())
     }
@@ -220,11 +220,21 @@ impl Client {
             PathSeg(self.session()?),
             PathSeg(&elt.id)
         ))?;
-        let () = execute(self.client.post(url).json(&json!({ "value": [keys] })))?;
+        execute(self.client.post(url).json(&json!({ "value": [keys] })))?;
 
         Ok(())
     }
+    // §11.4.2 Element Clear
+    pub fn clear(&self, elt: &Element) -> Result<(), Error> {
+        let url = self.url.join(&format!(
+            "session/{}/element/{}/clear",
+            PathSeg(self.session()?),
+            PathSeg(&elt.id)
+        ))?;
+        execute(self.client.post(url))?;
 
+        Ok(())
+    }
     fn session(&self) -> Result<&str, Error> {
         return self
             .session_id

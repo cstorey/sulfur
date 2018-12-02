@@ -276,3 +276,38 @@ fn form_submission() {
         url
     )
 }
+
+#[test]
+fn form_element_clearing() {
+    env_logger::try_init().unwrap_or_default();
+
+    let url = SERVER.url();
+    let s = DRIVER.new_session_config(&CONFIG).expect("new_session");
+    s.visit(&url).expect("visit");
+    let text = s
+        .find_element(&By::css("#the-form input[type='text']"))
+        .expect("find text");
+
+    let button = s
+        .find_element(&By::css("#the-form button"))
+        .expect("find button");
+
+    s.send_keys(&text, "Canary text").expect("send_keys");
+    s.clear(&text).expect("clear");
+    s.click(&button).expect("click");
+
+    let url = s.current_url().expect("current_url");
+    let url = url::Url::parse(&url).expect("parse url");
+    let q = url
+        .query_pairs()
+        .map(|(k, v)| (k.into_owned(), v.into_owned()))
+        .collect::<BTreeMap<_, _>>();
+
+    assert_eq!(
+        q.get("text"),
+        Some(&"".to_string()),
+        "Query text:{:?} from URL {:?}",
+        q.get("text"),
+        url
+    )
+}
