@@ -2,6 +2,11 @@
 authors = ["Ceri Storey <cez@necrofish.org.uk>"]
 name = "sulfur"
 version = "0.1.0"
+description = "A webdriver client for Rust."
+license = "Apache-2.0"
+repository = "https://github.com/cstorey/rustbucks"
+categories = []
+documentation = "https://docs.rs/sulfur"
 
 [dependencies]
 env_logger = "0.5.13"
