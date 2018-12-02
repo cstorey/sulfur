@@ -175,6 +175,17 @@ impl Client {
         Ok(result)
     }
 
+    pub fn click(&self, elt: &Element) -> Result<(), Error> {
+        let path = format!(
+            "session/{}/element/{}/click",
+            PathSeg(self.session()?),
+            PathSeg(&elt.id)
+        );
+        let () = execute(self.client.post(self.url.join(&path)?))?;
+
+        Ok(())
+    }
+
     fn session(&self) -> Result<&str, Error> {
         return self
             .session_id

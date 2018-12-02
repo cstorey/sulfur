@@ -210,3 +210,21 @@ fn find_multiple_elements_from_child() {
         elts
     )
 }
+
+#[test]
+fn should_click_links() {
+    env_logger::try_init().unwrap_or_default();
+
+    let url = SERVER.url();
+    let s = DRIVER.new_session_config(&CONFIG).expect("new_session");
+    s.visit(&url).expect("visit");
+    let main_page = s.current_url().expect("current_url");
+    let elt = s
+        .find_element(&By::css(".clickable-link"))
+        .expect("find #with-children");
+    println!("Elt: {:?}", elt);
+    let () = s.click(&elt).expect("click");
+    let new_page = s.current_url().expect("current_url");
+
+    assert_ne!(new_page, main_page);
+}
