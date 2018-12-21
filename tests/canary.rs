@@ -166,6 +166,19 @@ fn can_load_title() {
     assert_eq!(title, "Page title");
 }
 
+
+#[test]
+fn find_element_fails_on_missing_element() {
+    env_logger::try_init().unwrap_or_default();
+
+    let url = SERVER.url();
+    let s = new_session().expect("new_session");
+
+    s.visit(&url).expect("visit");
+    let res = s.find_element(&By::css("#i-do-not-exist"));
+    assert!(res.is_err(), "Result should be an error: {:?}", res);
+}
+
 #[test]
 fn find_text_present() {
     env_logger::try_init().unwrap_or_default();
