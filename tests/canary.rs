@@ -12,6 +12,7 @@ extern crate failure;
 
 use std::net::SocketAddr;
 use std::sync::Mutex;
+use std::env;
 
 use futures::sync::oneshot;
 use std::collections::BTreeMap;
@@ -39,7 +40,16 @@ lazy_static! {
 }
 
 fn new_session() -> Result<sulfur::Client, failure::Error> {
-    CHROME_DRIVER.new_session_config(&CHROME_CONFIG)
+    let driver = env::var("DRIVER").unwrap_or_else(|e| {
+        warn!("$DRIVER not specified, using chromedriver: {:?}", e);
+        "chromedriver".into()
+    });
+    match &*driver {
+        "chromedriver" | _ => {
+            info!("Starting instance with {:?}", driver);
+            CHROME_DRIVER.new_session_config(&CHROME_CONFIG)
+        }
+    }
 }
 
 #[test]
