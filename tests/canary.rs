@@ -161,15 +161,15 @@ fn find_multiple_elements() {
     let s = DRIVER.new_session_config(&CONFIG).expect("new_session");
 
     s.visit(&url).expect("visit");
-    let elts = s
-        .find_elements(&By::css("#missing-element"))
-        .expect("find #an-id");
+    let elts = s.find_elements(&By::css("#missing-element")).expect(
+        "find #an-id",
+    );
     println!("Elt: {:?}", elts);
     assert!(elts.is_empty(), "Element {:?} should be None", elts);
 
-    let elts = s
-        .find_elements(&By::css(".three-of-these"))
-        .expect("find .three-of-these");
+    let elts = s.find_elements(&By::css(".three-of-these")).expect(
+        "find .three-of-these",
+    );
 
     println!("Elt: {:?}", elts);
     assert!(
@@ -187,12 +187,12 @@ fn find_text_present_from_child() {
     let s = DRIVER.new_session_config(&CONFIG).expect("new_session");
 
     s.visit(&url).expect("visit");
-    let parent = s
-        .find_element(&By::css("#with-children"))
-        .expect("find #with-children");
-    let elt = s
-        .find_element_from(&parent, &By::css(".a-child"))
-        .expect("find #an-id");
+    let parent = s.find_element(&By::css("#with-children")).expect(
+        "find #with-children",
+    );
+    let elt = s.find_element_from(&parent, &By::css(".a-child")).expect(
+        "find #an-id",
+    );
     println!("Elt: {:?}", elt);
     let text_content = s.text(&elt).expect("read text");
     assert_eq!(text_content.trim(), "Hello world");
@@ -206,18 +206,17 @@ fn find_multiple_elements_from_child() {
     let s = DRIVER.new_session_config(&CONFIG).expect("new_session");
 
     s.visit(&url).expect("visit");
-    let parent = s
-        .find_element(&By::css("#with-children"))
-        .expect("find #with-children");
-    let elts = s
-        .find_elements_from(&parent, &By::css("#missing-element"))
+    let parent = s.find_element(&By::css("#with-children")).expect(
+        "find #with-children",
+    );
+    let elts = s.find_elements_from(&parent, &By::css("#missing-element"))
         .expect("find #an-id");
     println!("Elt: {:?}", elts);
     assert!(elts.is_empty(), "Element {:?} should be None", elts);
 
-    let elts = s
-        .find_elements(&By::css(".three-of-these"))
-        .expect("find .three-of-these");
+    let elts = s.find_elements(&By::css(".three-of-these")).expect(
+        "find .three-of-these",
+    );
 
     println!("Elt: {:?}", elts);
     assert!(
@@ -235,9 +234,9 @@ fn should_click_links() {
     let s = DRIVER.new_session_config(&CONFIG).expect("new_session");
     s.visit(&url).expect("visit");
     let main_page = s.current_url().expect("current_url");
-    let elt = s
-        .find_element(&By::css(".clickable-link"))
-        .expect("find #with-children");
+    let elt = s.find_element(&By::css(".clickable-link")).expect(
+        "find #with-children",
+    );
     println!("Elt: {:?}", elt);
     let () = s.click(&elt).expect("click");
     let new_page = s.current_url().expect("current_url");
@@ -252,19 +251,17 @@ fn form_submission() {
     let url = SERVER.url();
     let s = DRIVER.new_session_config(&CONFIG).expect("new_session");
     s.visit(&url).expect("visit");
-    let text = s
-        .find_element(&By::css("#the-form input[type='text']"))
+    let text = s.find_element(&By::css("#the-form input[type='text']"))
         .expect("find text");
     let () = s.send_keys(&text, "Canary text").expect("send_keys");
 
-    let button = s
-        .find_element(&By::css("#the-form button"))
-        .expect("find button");
+    let button = s.find_element(&By::css("#the-form button")).expect(
+        "find button",
+    );
     let () = s.click(&button).expect("click");
     let url = s.current_url().expect("current_url");
     let url = url::Url::parse(&url).expect("parse url");
-    let q = url
-        .query_pairs()
+    let q = url.query_pairs()
         .map(|(k, v)| (k.into_owned(), v.into_owned()))
         .collect::<BTreeMap<_, _>>();
 
@@ -284,13 +281,12 @@ fn form_element_clearing() {
     let url = SERVER.url();
     let s = DRIVER.new_session_config(&CONFIG).expect("new_session");
     s.visit(&url).expect("visit");
-    let text = s
-        .find_element(&By::css("#the-form input[type='text']"))
+    let text = s.find_element(&By::css("#the-form input[type='text']"))
         .expect("find text");
 
-    let button = s
-        .find_element(&By::css("#the-form button"))
-        .expect("find button");
+    let button = s.find_element(&By::css("#the-form button")).expect(
+        "find button",
+    );
 
     s.send_keys(&text, "Canary text").expect("send_keys");
     s.clear(&text).expect("clear");
@@ -298,8 +294,7 @@ fn form_element_clearing() {
 
     let url = s.current_url().expect("current_url");
     let url = url::Url::parse(&url).expect("parse url");
-    let q = url
-        .query_pairs()
+    let q = url.query_pairs()
         .map(|(k, v)| (k.into_owned(), v.into_owned()))
         .collect::<BTreeMap<_, _>>();
 

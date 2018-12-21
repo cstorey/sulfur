@@ -107,11 +107,9 @@ impl Client {
     // §9.1 Navigate To
     pub fn visit(&self, url: &str) -> Result<(), Error> {
         let path = format!("session/{}/url", PathSeg(self.session()?));
-        execute(
-            self.client
-                .post(self.url.join(&path)?)
-                .json(&json!({ "url": url })),
-        )
+        execute(self.client.post(self.url.join(&path)?).json(&json!({
+            "url": url
+        })))
     }
     // §9.3 Back
     pub fn back(&self) -> Result<(), Error> {
@@ -220,7 +218,9 @@ impl Client {
             PathSeg(self.session()?),
             PathSeg(&elt.id)
         ))?;
-        execute(self.client.post(url).json(&json!({ "value": [keys] })))?;
+        execute(self.client.post(url).json(&json!({
+            "value": [keys]
+        })))?;
 
         Ok(())
     }
@@ -236,11 +236,9 @@ impl Client {
         Ok(())
     }
     fn session(&self) -> Result<&str, Error> {
-        return self
-            .session_id
-            .as_ref()
-            .map(|r| &**r)
-            .ok_or_else(|| failure::err_msg("No current session"));
+        return self.session_id.as_ref().map(|r| &**r).ok_or_else(|| {
+            failure::err_msg("No current session")
+        });
     }
 }
 
@@ -273,10 +271,12 @@ where
             Ok(data)
         } else {
             let value: WdErrorVal = data.parse()?;
-            Err(WdError {
-                status: data.status,
-                value: value,
-            }.into())
+            Err(
+                WdError {
+                    status: data.status,
+                    value: value,
+                }.into(),
+            )
         }
     } else {
         let json: serde_json::Value = res.json()?;
