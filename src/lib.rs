@@ -13,6 +13,7 @@ extern crate url;
 extern crate log;
 
 pub mod chrome;
+pub mod gecko;
 mod client;
 
 pub use client::*;

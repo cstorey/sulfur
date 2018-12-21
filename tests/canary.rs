@@ -29,6 +29,14 @@ lazy_static! {
         d.headless(true);
         d
     };
+
+    static ref GECKO_DRIVER: gecko::Driver = gecko::Driver::start().expect("gecko::Driver::start");
+    static ref GECKO_CONFIG: gecko::Config = {
+        let mut d = gecko::Config::default();
+        d.headless(true);
+        d
+    };
+
     static ref RT: Mutex<runtime::Runtime> =
         Mutex::new(runtime::Runtime::new().expect("tokio runtime"));
     static ref SERVER: TestServer = {
@@ -45,6 +53,10 @@ fn new_session() -> Result<sulfur::Client, failure::Error> {
         "chromedriver".into()
     });
     match &*driver {
+        "geckodriver" => {
+            info!("Starting instance with {:?}", driver);
+            GECKO_DRIVER.new_session_config(&GECKO_CONFIG)
+        }
         "chromedriver" | _ => {
             info!("Starting instance with {:?}", driver);
             CHROME_DRIVER.new_session_config(&CHROME_CONFIG)
