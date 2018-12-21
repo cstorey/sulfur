@@ -123,6 +123,11 @@ impl Client {
         execute(self.client.post(self.url.join(&path)?))
     }
 
+    // §9.6 Get Title
+    pub fn title(&self) -> Result<String, Error> {
+        let path = format!("session/{}/title", PathSeg(self.session()?));
+        execute(self.client.get(self.url.join(&path)?))
+    }
     // §9.2 Get Current URL
     pub fn current_url(&self) -> Result<String, Error> {
         let path = format!("session/{}/url", PathSeg(self.session()?));

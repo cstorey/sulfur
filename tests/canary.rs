@@ -126,6 +126,20 @@ fn can_navigate() {
 }
 
 #[test]
+fn can_load_title() {
+    env_logger::try_init().unwrap_or_default();
+
+    let url = SERVER.url();
+
+    let s = DRIVER.new_session_config(&CONFIG).expect("new_session");
+
+    s.visit(&url).expect("visit");
+
+    let title = s.title().expect("current_url");
+    assert_eq!(title, "Page title");
+}
+
+#[test]
 fn find_text_present() {
     env_logger::try_init().unwrap_or_default();
 
