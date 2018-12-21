@@ -21,8 +21,8 @@ use tokio::runtime;
 const TEST_HTML_DIR: &'static str = concat!(env!("CARGO_MANIFEST_DIR"), "/tests/html");
 
 lazy_static! {
-    static ref DRIVER: chrome::Driver = chrome::Driver::start().expect("ChromeDriver::start");
-    static ref CONFIG: chrome::Config = {
+    static ref CHROME_DRIVER: chrome::Driver = chrome::Driver::start().expect("ChromeDriver::start");
+    static ref CHROME_CONFIG: chrome::Config = {
         let mut d = chrome::Config::default();
         d.headless(true);
         d
@@ -40,7 +40,7 @@ lazy_static! {
 #[test]
 fn can_run_chromedriver() {
     env_logger::try_init().unwrap_or_default();
-    let mut s = DRIVER.new_session_config(&CONFIG).expect("new_session");
+    let mut s = CHROME_DRIVER.new_session_config(&CHROME_CONFIG).expect("new_session");
     s.close().expect("close");
 }
 
@@ -89,7 +89,7 @@ fn can_navigate() {
 
     let url = SERVER.url();
 
-    let mut s = DRIVER.new_session_config(&CONFIG).expect("new_session");
+    let mut s = CHROME_DRIVER.new_session_config(&CHROME_CONFIG).expect("new_session");
 
     s.visit(&url).expect("visit");
 
@@ -131,7 +131,7 @@ fn can_load_title() {
 
     let url = SERVER.url();
 
-    let s = DRIVER.new_session_config(&CONFIG).expect("new_session");
+    let s = CHROME_DRIVER.new_session_config(&CHROME_CONFIG).expect("new_session");
 
     s.visit(&url).expect("visit");
 
@@ -144,7 +144,7 @@ fn find_text_present() {
     env_logger::try_init().unwrap_or_default();
 
     let url = SERVER.url();
-    let s = DRIVER.new_session_config(&CONFIG).expect("new_session");
+    let s = CHROME_DRIVER.new_session_config(&CHROME_CONFIG).expect("new_session");
 
     s.visit(&url).expect("visit");
     let elt = s.find_element(&By::css("#an-id")).expect("find #an-id");
@@ -158,7 +158,7 @@ fn find_tag_name() {
     env_logger::try_init().unwrap_or_default();
 
     let url = SERVER.url();
-    let s = DRIVER.new_session_config(&CONFIG).expect("new_session");
+    let s = CHROME_DRIVER.new_session_config(&CHROME_CONFIG).expect("new_session");
 
     s.visit(&url).expect("visit");
     let elt = s.find_element(&By::css("#an-id")).expect("find #an-id");
@@ -172,7 +172,7 @@ fn find_multiple_elements() {
     env_logger::try_init().unwrap_or_default();
 
     let url = SERVER.url();
-    let s = DRIVER.new_session_config(&CONFIG).expect("new_session");
+    let s = CHROME_DRIVER.new_session_config(&CHROME_CONFIG).expect("new_session");
 
     s.visit(&url).expect("visit");
     let elts = s.find_elements(&By::css("#missing-element")).expect(
@@ -198,7 +198,7 @@ fn find_text_present_from_child() {
     env_logger::try_init().unwrap_or_default();
 
     let url = SERVER.url();
-    let s = DRIVER.new_session_config(&CONFIG).expect("new_session");
+    let s = CHROME_DRIVER.new_session_config(&CHROME_CONFIG).expect("new_session");
 
     s.visit(&url).expect("visit");
     let parent = s.find_element(&By::css("#with-children")).expect(
@@ -217,7 +217,7 @@ fn find_multiple_elements_from_child() {
     env_logger::try_init().unwrap_or_default();
 
     let url = SERVER.url();
-    let s = DRIVER.new_session_config(&CONFIG).expect("new_session");
+    let s = CHROME_DRIVER.new_session_config(&CHROME_CONFIG).expect("new_session");
 
     s.visit(&url).expect("visit");
     let parent = s.find_element(&By::css("#with-children")).expect(
@@ -245,7 +245,7 @@ fn should_click_links() {
     env_logger::try_init().unwrap_or_default();
 
     let url = SERVER.url();
-    let s = DRIVER.new_session_config(&CONFIG).expect("new_session");
+    let s = CHROME_DRIVER.new_session_config(&CHROME_CONFIG).expect("new_session");
     s.visit(&url).expect("visit");
     let main_page = s.current_url().expect("current_url");
     let elt = s.find_element(&By::css(".clickable-link")).expect(
@@ -263,7 +263,7 @@ fn form_submission() {
     env_logger::try_init().unwrap_or_default();
 
     let url = SERVER.url();
-    let s = DRIVER.new_session_config(&CONFIG).expect("new_session");
+    let s = CHROME_DRIVER.new_session_config(&CHROME_CONFIG).expect("new_session");
     s.visit(&url).expect("visit");
     let text = s.find_element(&By::css("#the-form input[type='text']"))
         .expect("find text");
@@ -293,7 +293,7 @@ fn form_element_clearing() {
     env_logger::try_init().unwrap_or_default();
 
     let url = SERVER.url();
-    let s = DRIVER.new_session_config(&CONFIG).expect("new_session");
+    let s = CHROME_DRIVER.new_session_config(&CHROME_CONFIG).expect("new_session");
     s.visit(&url).expect("visit");
     let text = s.find_element(&By::css("#the-form input[type='text']"))
         .expect("find text");
