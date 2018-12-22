@@ -47,33 +47,33 @@ impl Driver {
     // Returns:
     // Ie: no status.
     /*
-    {
-        "value": {
-            "sessionId": "1f150c59-685e-184f-ae5e-8f124166e1c6",
-            "capabilities": {
-            "browserName": "firefox",
-            "browserVersion": "58.0.1",
-            // ...
-            "timeouts": {
-                "implicit": 0,
-                "pageLoad": 300000,
-                "script": 30000
-            }
-            }
-        }
-    } 
-   */
+     {
+         "value": {
+             "sessionId": "1f150c59-685e-184f-ae5e-8f124166e1c6",
+             "capabilities": {
+             "browserName": "firefox",
+             "browserVersion": "58.0.1",
+             // ...
+             "timeouts": {
+                 "implicit": 0,
+                 "pageLoad": 300000,
+                 "script": 30000
+             }
+             }
+         }
+     }
+    */
 
     // On failure:
-  /*
-    {
-        "value": {
-            "error": "session not created",
-            "message": "Session is already started",
-            "stacktrace": ""
-        }
-    }
-  */
+    /*
+      {
+          "value": {
+              "error": "session not created",
+              "message": "Session is already started",
+              "stacktrace": ""
+          }
+      }
+    */
 
     // Also, we don't actually support multiple instances per driver, so we'll
     // need to defer process creation to here.
@@ -145,9 +145,9 @@ impl Config {
         NewSessionReq {
             capabilities: Capabilities {
                 always_match: json!({
-                "browserName": "firefox",
-                "moz:firefoxOptions": { "args": args },
-             }),
+                   "browserName": "firefox",
+                   "moz:firefoxOptions": { "args": args },
+                }),
             },
         }
     }

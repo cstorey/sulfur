@@ -114,7 +114,8 @@ fn can_navigate() {
         .click(
             &s.find_element(&By::css(".clickable-link"))
                 .expect("find .clickable-link"),
-        ).expect("click");
+        )
+        .expect("click");
 
     let main_page = s.current_url().expect("current_url");
     assert!(

@@ -28,7 +28,8 @@ pub fn unused_port_no() -> Result<u16, Error> {
                     warn!("Error binding to {:?}; kind:{:?}; {:?}", a, e.kind(), e);
                     Err(e)
                 }
-            }).context("Binding to ephemeral port")?
+            })
+            .context("Binding to ephemeral port")?
         {
             let addr = l.local_addr().context("Listener local port")?;
             info!("Available: {}", addr);

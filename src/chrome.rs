@@ -111,12 +111,12 @@ impl Config {
         NewSessionReq {
             capabilities: Capabilities {
                 always_match: json!({
-                "browserName": "chrome",
-                "goog:chromeOptions" : {
-                    "w3c" : true,
-                    "args": args,
-                }
-             }),
+                   "browserName": "chrome",
+                   "goog:chromeOptions" : {
+                       "w3c" : true,
+                       "args": args,
+                   }
+                }),
             },
         }
     }
