@@ -344,7 +344,8 @@ impl Client {
             PathSeg(elt.id())
         ))?;
         execute(self.client.post(url).json(&json!({
-            "text": keys
+            "text": keys,
+            "value": [keys],
         })))?;
 
         Ok(())
