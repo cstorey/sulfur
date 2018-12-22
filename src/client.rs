@@ -113,7 +113,7 @@ impl Client {
         client: reqwest::Client,
     ) -> Result<Self, Error> {
         let url = url.into_url()?;
-        let body : NewSessionResp = execute(client.post(url.join("session")?).json(&req))?;
+        let body: NewSessionResp = execute(client.post(url.join("session")?).json(&req))?;
 
         info!("New session response: {:?}", body);
 
@@ -305,11 +305,7 @@ where
             Ok(data)
         } else {
             let value: WdErrorVal = data.parse()?;
-            Err(
-                WdError {
-                    value: value,
-                }.into(),
-            )
+            Err(WdError { value: value }.into())
         }
     } else {
         let json: serde_json::Value = res.json()?;
