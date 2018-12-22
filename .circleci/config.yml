@@ -47,11 +47,13 @@ jobs:
       - *SAVE_DEPS
       - *SAVE_TARGET
 
-  test:
+  test_chromedriver:
     docker:
       - image: circleci/rust:1.31.0-browsers
         environment:
           RUSTFLAGS: -D warnings
+    environment:
+      DRIVER: chromedriver
     steps:
       - checkout
       - *RESTORE_REGISTRY
@@ -60,11 +62,28 @@ jobs:
       - run: rustc --version | tee ~/rust-version
       - *RESTORE_DEPS
       - run: cargo test
-
+  test_geckodriver:
+    docker:
+      - image: circleci/rust:1.31.0-browsers
+        environment:
+          RUSTFLAGS: -D warnings
+    environment:
+      DRIVER: geckodriver
+    steps:
+      - checkout
+      - *RESTORE_REGISTRY
+      - run: cargo generate-lockfile
+      - *RESTORE_TARGET
+      - run: rustc --version | tee ~/rust-version
+      - *RESTORE_DEPS
+      - run: cargo test
 workflows:
   testall:
     jobs:
       - build
-      - test:
+      - test_chromedriver:
+          requires:
+            - build
+      - test_geckodriver:
           requires:
             - build
