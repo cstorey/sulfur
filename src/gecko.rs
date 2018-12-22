@@ -1,9 +1,9 @@
 use client::{Client, NewSessionReq, Capabilities};
 use failure::Error;
 use reqwest;
-use std::net::{SocketAddr, TcpListener};
 use std::process::{Child, Command};
 use std::{thread, time};
+use junk_drawer::unused_port_no;
 
 use failure::ResultExt;
 
@@ -151,10 +151,4 @@ impl Config {
             },
         }
     }
-}
-
-fn unused_port_no() -> Result<u16, Error> {
-    let a = SocketAddr::from(([0, 0, 0, 0], 0));
-    let l = TcpListener::bind(a).context("Binding to ephemeral port")?;
-    Ok(l.local_addr().context("Listener local port")?.port())
 }

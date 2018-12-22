@@ -12,6 +12,8 @@ extern crate url;
 #[macro_use]
 extern crate log;
 
+mod junk_drawer;
+
 pub mod chrome;
 pub mod gecko;
 mod client;
