@@ -1,9 +1,9 @@
-use client::{Client, NewSessionReq, Capabilities};
+use client::{Capabilities, Client, NewSessionReq};
 use failure::Error;
+use junk_drawer::unused_port_no;
 use reqwest;
 use std::process::{Child, Command};
 use std::{thread, time};
-use junk_drawer::unused_port_no;
 
 use failure::ResultExt;
 

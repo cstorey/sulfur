@@ -1,8 +1,7 @@
 use failure::Error;
+use serde::de::{self, Deserialize, Deserializer, MapAccess, Visitor};
 use std::fmt;
 use url::percent_encoding::{utf8_percent_encode, PATH_SEGMENT_ENCODE_SET};
-use serde::de::{self, Deserialize, Deserializer, Visitor, MapAccess};
-
 
 #[derive(Debug, Clone)]
 pub struct Client {
@@ -99,7 +98,6 @@ impl<'de> Deserialize<'de> for Element {
     where
         D: Deserializer<'de>,
     {
-
         enum Field {
             // Chromedriver uses `ELEMENT`
             // w3c spec uses `element-6066-11e4-a52e-4f735466cecf`
@@ -130,8 +128,7 @@ impl<'de> Deserialize<'de> for Element {
                         E: de::Error,
                     {
                         match value {
-                            "ELEMENT" |
-                            "element-6066-11e4-a52e-4f735466cecf" => Ok(Field::Id),
+                            "ELEMENT" | "element-6066-11e4-a52e-4f735466cecf" => Ok(Field::Id),
                             _ => Err(de::Error::unknown_field(value, FIELDS)),
                         }
                     }
@@ -176,7 +173,6 @@ impl<'de> Deserialize<'de> for Element {
     }
 }
 
-
 struct PathSeg<'a>(&'a str);
 
 impl Client {
@@ -195,7 +191,6 @@ impl Client {
 
     // Ie: chromedriver returns the sessionId as a top-level item, wheras geckodriver (and presumably others)
     // return it under value.
-
 
     // §8.1 Creating a new session
     pub fn new_with_http<U: reqwest::IntoUrl>(
@@ -227,9 +222,11 @@ impl Client {
     // §9.1 Navigate To
     pub fn visit(&self, url: &str) -> Result<(), Error> {
         let path = format!("session/{}/url", PathSeg(self.session()?));
-        execute(self.client.post(self.url.join(&path)?).json(&json!({
-            "url": url
-        })))
+        execute(
+            self.client
+                .post(self.url.join(&path)?)
+                .json(&json!({ "url": url })),
+        )
     }
     // §9.3 Back
     pub fn back(&self) -> Result<(), Error> {
@@ -362,9 +359,11 @@ impl Client {
         Ok(())
     }
     fn session(&self) -> Result<&str, Error> {
-        return self.session_id.as_ref().map(|r| &**r).ok_or_else(|| {
-            failure::err_msg("No current session")
-        });
+        return self
+            .session_id
+            .as_ref()
+            .map(|r| &**r)
+            .ok_or_else(|| failure::err_msg("No current session"));
     }
 }
 
