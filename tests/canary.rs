@@ -7,12 +7,12 @@ extern crate tokio;
 extern crate warp;
 #[macro_use]
 extern crate log;
-extern crate url;
 extern crate failure;
+extern crate url;
 
+use std::env;
 use std::net::SocketAddr;
 use std::sync::Mutex;
-use std::env;
 
 use futures::sync::oneshot;
 use std::collections::BTreeMap;
@@ -42,18 +42,13 @@ fn new_session() -> Result<(Box<Drop>, sulfur::Client), failure::Error> {
         "geckodriver" => {
             info!("Starting instance with {:?}", driver);
             let driver: gecko::Driver = gecko::Driver::start().expect("gecko::Driver::start");
-            let session = driver.new_session_config(
-                &gecko::Config::default().headless(true),
-            )?;
+            let session = driver.new_session_config(&gecko::Config::default().headless(true))?;
             Ok((Box::new(driver), session))
-
         }
         "chromedriver" | _ => {
             info!("Starting instance with {:?}", driver);
             let driver = chrome::Driver::start().expect("ChromeDriver::start");
-            let session = driver.new_session_config(
-                chrome::Config::default().headless(true),
-            )?;
+            let session = driver.new_session_config(chrome::Config::default().headless(true))?;
             Ok((Box::new(driver), session))
         }
     }
@@ -115,9 +110,12 @@ fn can_navigate() {
 
     s.visit(&url).expect("visit");
 
-    let () = s.click(&s.find_element(&By::css(".clickable-link")).expect(
-        "find .clickable-link",
-    )).expect("click");
+    let () = s
+        .click(
+            &s.find_element(&By::css(".clickable-link"))
+                .expect("find .clickable-link"),
+        )
+        .expect("click");
 
     let main_page = s.current_url().expect("current_url");
     assert!(
@@ -164,7 +162,6 @@ fn can_load_title() {
     let title = s.title().expect("current_url");
     assert_eq!(title, "Page title");
 }
-
 
 #[test]
 fn find_element_fails_on_missing_element() {
@@ -214,15 +211,15 @@ fn find_multiple_elements() {
     let (_driver, s) = new_session().expect("new_session");
 
     s.visit(&url).expect("visit");
-    let elts = s.find_elements(&By::css("#missing-element")).expect(
-        "find #an-id",
-    );
+    let elts = s
+        .find_elements(&By::css("#missing-element"))
+        .expect("find #an-id");
     println!("Elt: {:?}", elts);
     assert!(elts.is_empty(), "Element {:?} should be None", elts);
 
-    let elts = s.find_elements(&By::css(".three-of-these")).expect(
-        "find .three-of-these",
-    );
+    let elts = s
+        .find_elements(&By::css(".three-of-these"))
+        .expect("find .three-of-these");
 
     println!("Elt: {:?}", elts);
     assert!(
@@ -240,12 +237,12 @@ fn find_text_present_from_child() {
     let (_driver, s) = new_session().expect("new_session");
 
     s.visit(&url).expect("visit");
-    let parent = s.find_element(&By::css("#with-children")).expect(
-        "find #with-children",
-    );
-    let elt = s.find_element_from(&parent, &By::css(".a-child")).expect(
-        "find #an-id",
-    );
+    let parent = s
+        .find_element(&By::css("#with-children"))
+        .expect("find #with-children");
+    let elt = s
+        .find_element_from(&parent, &By::css(".a-child"))
+        .expect("find #an-id");
     println!("Elt: {:?}", elt);
     let text_content = s.text(&elt).expect("read text");
     assert_eq!(text_content.trim(), "Hello world");
@@ -259,17 +256,18 @@ fn find_multiple_elements_from_child() {
     let (_driver, s) = new_session().expect("new_session");
 
     s.visit(&url).expect("visit");
-    let parent = s.find_element(&By::css("#with-children")).expect(
-        "find #with-children",
-    );
-    let elts = s.find_elements_from(&parent, &By::css("#missing-element"))
+    let parent = s
+        .find_element(&By::css("#with-children"))
+        .expect("find #with-children");
+    let elts = s
+        .find_elements_from(&parent, &By::css("#missing-element"))
         .expect("find #an-id");
     println!("Elt: {:?}", elts);
     assert!(elts.is_empty(), "Element {:?} should be None", elts);
 
-    let elts = s.find_elements(&By::css(".three-of-these")).expect(
-        "find .three-of-these",
-    );
+    let elts = s
+        .find_elements(&By::css(".three-of-these"))
+        .expect("find .three-of-these");
 
     println!("Elt: {:?}", elts);
     assert!(
@@ -287,9 +285,9 @@ fn should_click_links() {
     let (_driver, s) = new_session().expect("new_session");
     s.visit(&url).expect("visit");
     let main_page = s.current_url().expect("current_url");
-    let elt = s.find_element(&By::css(".clickable-link")).expect(
-        "find #with-children",
-    );
+    let elt = s
+        .find_element(&By::css(".clickable-link"))
+        .expect("find #with-children");
     println!("Elt: {:?}", elt);
     let () = s.click(&elt).expect("click");
     let new_page = s.current_url().expect("current_url");
@@ -304,17 +302,19 @@ fn form_submission() {
     let url = SERVER.url();
     let (_driver, s) = new_session().expect("new_session");
     s.visit(&url).expect("visit");
-    let text = s.find_element(&By::css("#the-form input[type='text']"))
+    let text = s
+        .find_element(&By::css("#the-form input[type='text']"))
         .expect("find text");
     let () = s.send_keys(&text, "Canary text").expect("send_keys");
 
-    let button = s.find_element(&By::css("#the-form button")).expect(
-        "find button",
-    );
+    let button = s
+        .find_element(&By::css("#the-form button"))
+        .expect("find button");
     let () = s.click(&button).expect("click");
     let url = s.current_url().expect("current_url");
     let url = url::Url::parse(&url).expect("parse url");
-    let q = url.query_pairs()
+    let q = url
+        .query_pairs()
         .map(|(k, v)| (k.into_owned(), v.into_owned()))
         .collect::<BTreeMap<_, _>>();
 
@@ -334,12 +334,13 @@ fn form_element_clearing() {
     let url = SERVER.url();
     let (_driver, s) = new_session().expect("new_session");
     s.visit(&url).expect("visit");
-    let text = s.find_element(&By::css("#the-form input[type='text']"))
+    let text = s
+        .find_element(&By::css("#the-form input[type='text']"))
         .expect("find text");
 
-    let button = s.find_element(&By::css("#the-form button")).expect(
-        "find button",
-    );
+    let button = s
+        .find_element(&By::css("#the-form button"))
+        .expect("find button");
 
     s.send_keys(&text, "Canary text").expect("send_keys");
     s.clear(&text).expect("clear");
@@ -347,7 +348,8 @@ fn form_element_clearing() {
 
     let url = s.current_url().expect("current_url");
     let url = url::Url::parse(&url).expect("parse url");
-    let q = url.query_pairs()
+    let q = url
+        .query_pairs()
         .map(|(k, v)| (k.into_owned(), v.into_owned()))
         .collect::<BTreeMap<_, _>>();
 

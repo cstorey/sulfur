@@ -38,6 +38,9 @@ jobs:
           RUSTFLAGS: -D warnings
     steps:
       - checkout
+      - run: rustup component add rustfmt
+      - run: rustfmt --version
+      - run: cargo fmt --all -- --check
       - *RESTORE_REGISTRY
       - run: cargo generate-lockfile
       - *SAVE_REGISTRY

@@ -15,7 +15,7 @@ extern crate log;
 mod junk_drawer;
 
 pub mod chrome;
-pub mod gecko;
 mod client;
+pub mod gecko;
 
 pub use client::*;
