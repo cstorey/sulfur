@@ -21,7 +21,15 @@ save_deps: &SAVE_DEPS
     - target
     - /usr/local/cargo/registry/cache
 
-version: 2
+save_target: &SAVE_TARGET
+  persist_to_workspace:
+    root: target
+    paths: ["*"]
+restore_target: &RESTORE_TARGET
+  attach_workspace:
+    at: target
+
+version: 2.1
 jobs:
   build:
     docker:
@@ -35,5 +43,28 @@ jobs:
       - *SAVE_REGISTRY
       - run: rustc --version | tee ~/rust-version
       - *RESTORE_DEPS
-      - run: cargo test
+      - run: cargo build --tests
       - *SAVE_DEPS
+      - *SAVE_TARGET
+
+  test:
+    docker:
+      - image: circleci/rust:1.31.0-browsers
+        environment:
+          RUSTFLAGS: -D warnings
+    steps:
+      - checkout
+      - *RESTORE_REGISTRY
+      - run: cargo generate-lockfile
+      - *RESTORE_TARGET
+      - run: rustc --version | tee ~/rust-version
+      - *RESTORE_DEPS
+      - run: cargo test
+
+workflows:
+  testall:
+    jobs:
+      - build
+      - test:
+          requires:
+            - build
