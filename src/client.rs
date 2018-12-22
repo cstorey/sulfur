@@ -68,7 +68,13 @@ impl By {
 #[derive(Debug, Deserialize, Clone)]
 pub struct Element {
     #[serde(rename = "ELEMENT")]
-    id: String,
+    _id: String,
+}
+
+impl Element {
+    fn id(&self) -> &str {
+        &*self._id
+    }
 }
 
 struct PathSeg<'a>(&'a str);
@@ -157,7 +163,7 @@ impl Client {
         let path = format!(
             "session/{}/element/{}/element",
             PathSeg(self.session()?),
-            PathSeg(&elt.id)
+            PathSeg(elt.id())
         );
         let req = self.client.post(self.url.join(&path)?).json(by);
         let result = execute(req)?;
@@ -170,7 +176,7 @@ impl Client {
         let path = format!(
             "session/{}/element/{}/elements",
             PathSeg(self.session()?),
-            PathSeg(&elt.id)
+            PathSeg(elt.id())
         );
         let req = self.client.post(self.url.join(&path)?).json(by);
         let result = execute(req)?;
@@ -183,7 +189,7 @@ impl Client {
         let path = format!(
             "session/{}/element/{}/text",
             PathSeg(self.session()?),
-            PathSeg(&elt.id)
+            PathSeg(elt.id())
         );
         let req = self.client.get(self.url.join(&path)?);
         let result = execute(req)?;
@@ -196,7 +202,7 @@ impl Client {
         let path = format!(
             "session/{}/element/{}/name",
             PathSeg(self.session()?),
-            PathSeg(&elt.id)
+            PathSeg(elt.id())
         );
         let req = self.client.get(self.url.join(&path)?);
         let result = execute(req)?;
@@ -209,7 +215,7 @@ impl Client {
         let path = format!(
             "session/{}/element/{}/click",
             PathSeg(self.session()?),
-            PathSeg(&elt.id)
+            PathSeg(elt.id())
         );
         execute(self.client.post(self.url.join(&path)?))?;
 
@@ -221,7 +227,7 @@ impl Client {
         let url = self.url.join(&format!(
             "session/{}/element/{}/value",
             PathSeg(self.session()?),
-            PathSeg(&elt.id)
+            PathSeg(elt.id())
         ))?;
         execute(self.client.post(url).json(&json!({
             "value": [keys]
@@ -234,7 +240,7 @@ impl Client {
         let url = self.url.join(&format!(
             "session/{}/element/{}/clear",
             PathSeg(self.session()?),
-            PathSeg(&elt.id)
+            PathSeg(elt.id())
         ))?;
         execute(self.client.post(url))?;
 
