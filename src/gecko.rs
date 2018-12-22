@@ -145,8 +145,8 @@ impl Config {
         NewSessionReq {
             capabilities: Capabilities {
                 always_match: json!({
-                "browserName": "chrome",
-                "chromeOptions": { "args": args },
+                "browserName": "firefox",
+                "moz:firefoxOptions": { "args": args },
              }),
             },
         }
