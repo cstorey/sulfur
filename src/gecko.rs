@@ -1,4 +1,4 @@
-use client::{Client, NewSessionReq};
+use client::{Client, NewSessionReq, Capabilities};
 use failure::Error;
 use reqwest;
 use std::net::{SocketAddr, TcpListener};
@@ -143,10 +143,12 @@ impl Config {
             args.push("--headless")
         }
         NewSessionReq {
-            desired_capabilities: json!({
+            capabilities: Capabilities {
+                always_match: json!({
                 "browserName": "chrome",
                 "chromeOptions": { "args": args },
              }),
+            },
         }
     }
 }

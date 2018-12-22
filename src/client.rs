@@ -1,6 +1,8 @@
 use failure::Error;
 use std::fmt;
 use url::percent_encoding::{utf8_percent_encode, PATH_SEGMENT_ENCODE_SET};
+use serde::de::{self, Deserialize, Deserializer, Visitor, MapAccess};
+
 
 #[derive(Debug, Clone)]
 pub struct Client {
@@ -28,7 +30,13 @@ impl HasValue {
 #[derive(Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct NewSessionReq {
-    pub(crate) desired_capabilities: serde_json::Value,
+    pub(crate) capabilities: Capabilities,
+}
+// re: https://developer.mozilla.org/en-US/docs/Web/WebDriver/Capabilities
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct Capabilities {
+    pub(crate) always_match: serde_json::Value,
 }
 
 #[derive(Debug, Deserialize)]
@@ -72,12 +80,12 @@ impl By {
     }
 }
 
-#[derive(Debug, Deserialize, Clone)]
+#[derive(Debug, Clone)]
 pub struct Element {
-    #[serde(rename = "ELEMENT")]
+    // #[serde(rename = "ELEMENT")]
     _id: String,
-    #[serde(rename = "element-6066-11e4-a52e-4f735466cecf")]
-    _id2: Option<String>,
+    // #[serde(rename = "element-6066-11e4-a52e-4f735466cecf")]
+    // _id2: Option<String>,
 }
 
 impl Element {
@@ -85,6 +93,89 @@ impl Element {
         &*self._id
     }
 }
+
+impl<'de> Deserialize<'de> for Element {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+
+        enum Field {
+            // Chromedriver uses `ELEMENT`
+            // w3c spec uses `element-6066-11e4-a52e-4f735466cecf`
+            Id,
+        };
+
+        // This part could also be generated independently by:
+        //
+        //    #[derive(Deserialize)]
+        //    #[serde(field_identifier, rename_all = "lowercase")]
+        //    enum Field { Secs, Nanos }
+        impl<'de> Deserialize<'de> for Field {
+            fn deserialize<D>(deserializer: D) -> Result<Field, D::Error>
+            where
+                D: Deserializer<'de>,
+            {
+                struct FieldVisitor;
+
+                impl<'de> Visitor<'de> for FieldVisitor {
+                    type Value = Field;
+
+                    fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
+                        formatter.write_str("`ELEMENT` or `element-6066-11e4-a52e-4f735466cecf`")
+                    }
+
+                    fn visit_str<E>(self, value: &str) -> Result<Field, E>
+                    where
+                        E: de::Error,
+                    {
+                        match value {
+                            "ELEMENT" |
+                            "element-6066-11e4-a52e-4f735466cecf" => Ok(Field::Id),
+                            _ => Err(de::Error::unknown_field(value, FIELDS)),
+                        }
+                    }
+                }
+
+                deserializer.deserialize_identifier(FieldVisitor)
+            }
+        }
+
+        struct ElementVisitor;
+
+        impl<'de> Visitor<'de> for ElementVisitor {
+            type Value = Element;
+
+            fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
+                formatter.write_str("struct Element")
+            }
+
+            fn visit_map<V>(self, mut map: V) -> Result<Element, V::Error>
+            where
+                V: MapAccess<'de>,
+            {
+                let mut id = None;
+                while let Some(key) = map.next_key()? {
+                    match key {
+                        Field::Id => {
+                            if id.is_some() {
+                                return Err(de::Error::duplicate_field("id"));
+                            }
+                            id = Some(map.next_value()?);
+                        }
+                    }
+                }
+                Ok(Element {
+                    _id: id.ok_or_else(|| de::Error::missing_field("id"))?,
+                })
+            }
+        }
+
+        const FIELDS: &'static [&'static str] = &["ELEMENT", "element-6066-11e4-a52e-4f735466cecf"];
+        deserializer.deserialize_struct("Element", FIELDS, ElementVisitor)
+    }
+}
+
 
 struct PathSeg<'a>(&'a str);
 
@@ -253,7 +344,7 @@ impl Client {
             PathSeg(elt.id())
         ))?;
         execute(self.client.post(url).json(&json!({
-            "value": [keys]
+            "text": keys
         })))?;
 
         Ok(())
