@@ -234,13 +234,13 @@ impl Client {
     // §9.3 Back
     pub fn back(&self) -> Result<(), Error> {
         let path = format!("session/{}/back", PathSeg(self.session()?));
-        execute(self.client.post(self.url.join(&path)?))
+        execute(self.client.post(self.url.join(&path)?).json(&json!({})))
     }
 
     // §9.4 Forward
     pub fn forward(&self) -> Result<(), Error> {
         let path = format!("session/{}/forward", PathSeg(self.session()?));
-        execute(self.client.post(self.url.join(&path)?))
+        execute(self.client.post(self.url.join(&path)?).json(&json!({})))
     }
 
     // §9.6 Get Title
@@ -331,7 +331,7 @@ impl Client {
             PathSeg(self.session()?),
             PathSeg(elt.id())
         );
-        execute(self.client.post(self.url.join(&path)?))?;
+        execute(self.client.post(self.url.join(&path)?).json(&json!({})))?;
 
         Ok(())
     }
@@ -356,7 +356,7 @@ impl Client {
             PathSeg(self.session()?),
             PathSeg(elt.id())
         ))?;
-        execute(self.client.post(url))?;
+        execute(self.client.post(url).json(&json!({})))?;
 
         Ok(())
     }
