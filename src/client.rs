@@ -11,16 +11,17 @@ pub struct Client {
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
 struct HasValue {
-    status: u64,
-    // If we find that anything other than Chromedriver doesn't
-    // support this, we'll need to revise how we handle `execute` below.
-    session_id: String,
     value: serde_json::Value,
 }
 
 impl HasValue {
     fn parse<T: serde::de::DeserializeOwned>(&self) -> Result<T, Error> {
         Ok(serde_json::from_value(self.value.clone())?)
+    }
+
+    // does `self.value | .error` exist?
+    fn is_okay(&self) -> bool {
+        return true;
     }
 }
 
@@ -29,6 +30,13 @@ impl HasValue {
 pub struct NewSessionReq {
     pub(crate) desired_capabilities: serde_json::Value,
 }
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct NewSessionResp {
+    pub(crate) session_id: String,
+}
+
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
 struct WdErrorVal {
@@ -38,7 +46,6 @@ struct WdErrorVal {
 #[derive(Debug, Deserialize, Fail)]
 #[serde(rename_all = "camelCase")]
 struct WdError {
-    status: u64,
     value: WdErrorVal,
 }
 
@@ -69,6 +76,8 @@ impl By {
 pub struct Element {
     #[serde(rename = "ELEMENT")]
     _id: String,
+    #[serde(rename = "element-6066-11e4-a52e-4f735466cecf")]
+    _id2: Option<String>,
 }
 
 impl Element {
@@ -85,6 +94,18 @@ impl Client {
         Client::new_with_http(url, req, client)
     }
 
+    /* New session geckodriver:
+    {"value":{"sessionId":"dcd61912-edb7-b842-a480-625f1fa45826","capabilities":{"acceptInsecureCerts":false,"browserName":"firefox","browserVersion":"58.0.1","moz:accessibilityChecks":false,"moz:geckodriverVersion":"0.23.0","moz:headless":false,"moz:processID":6809,"moz:profile":"/var/folders/13/0cgwy88x5p1916xjmpw1fhc40000gn/T/rust_mozprofile.5zyna67LuJNh","moz:webdriverClick":true,"pageLoadStrategy":"normal","platformName":"darwin","platformVersion":"18.2.0","rotatable":false,"timeouts":{"implicit":0,"pageLoad":300000,"script":30000}}}}
+    */
+
+    /* `New session chromedriver:
+        {"sessionId":"a90810adc57f5d6781a12f9b8735407d","status":0,"value":{"acceptInsecureCerts":false,"acceptSslCerts":false,"applicationCacheEnabled":false,"browserConnectionEnabled":false,"browserName":"chrome","chrome":{"chromedriverVersion":"2.45.615355 (d5698f682d8b2742017df6c81e0bd8e6a3063189)","userDataDir":"/var/folders/13/0cgwy88x5p1916xjmpw1fhc40000gn/T/.org.chromium.Chromium.BJONPd"},"cssSelectorsEnabled":true,"databaseEnabled":false,"goog:chromeOptions":{"debuggerAddress":"localhost:53115"},"handlesAlerts":true,"hasTouchScreen":false,"javascriptEnabled":true,"locationContextEnabled":true,"mobileEmulationEnabled":false,"nativeEvents":true,"networkConnectionEnabled":false,"pageLoadStrategy":"normal","platform":"Mac OS X","proxy":{},"rotatable":false,"setWindowRect":true,"strictFileInteractability":false,"takesHeapSnapshot":true,"takesScreenshot":true,"timeouts":{"implicit":0,"pageLoad":300000,"script":30000},"unexpectedAlertBehaviour":"ignore","version":"71.0.3578.98","webStorageEnabled":true}}
+    */
+
+    // Ie: chromedriver returns the sessionId as a top-level item, wheras geckodriver (and presumably others)
+    // return it under value.
+
+
     // §8.1 Creating a new session
     pub fn new_with_http<U: reqwest::IntoUrl>(
         url: U,
@@ -92,7 +113,9 @@ impl Client {
         client: reqwest::Client,
     ) -> Result<Self, Error> {
         let url = url.into_url()?;
-        let body = execute_unparsed(client.post(url.join("session")?).json(&req))?;
+        let body : NewSessionResp = execute(client.post(url.join("session")?).json(&req))?;
+
+        info!("New session response: {:?}", body);
 
         Ok(Client {
             client: client,
@@ -143,7 +166,7 @@ impl Client {
     // §11.2.2 Find Element
     pub fn find_element(&self, by: &By) -> Result<Element, Error> {
         let path = format!("session/{}/element", PathSeg(self.session()?));
-        let req = self.client.post(self.url.join(&path)?).json(by);
+        let req = self.client.post(self.url.join(&path)?).json(&by);
         let result = execute(req)?;
 
         Ok(result)
@@ -278,13 +301,12 @@ where
     let mut res = req.send()?;
     if res.status().is_success() {
         let data: HasValue = res.json()?;
-        if data.status == 0 {
+        if data.is_okay() {
             Ok(data)
         } else {
             let value: WdErrorVal = data.parse()?;
             Err(
                 WdError {
-                    status: data.status,
                     value: value,
                 }.into(),
             )
