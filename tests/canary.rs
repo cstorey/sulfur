@@ -23,20 +23,6 @@ use tokio::runtime;
 const TEST_HTML_DIR: &'static str = concat!(env!("CARGO_MANIFEST_DIR"), "/tests/html");
 
 lazy_static! {
-    static ref CHROME_DRIVER: chrome::Driver = chrome::Driver::start().expect("ChromeDriver::start");
-    static ref CHROME_CONFIG: chrome::Config = {
-        let mut d = chrome::Config::default();
-        d.headless(true);
-        d
-    };
-
-    static ref GECKO_DRIVER: gecko::Driver = gecko::Driver::start().expect("gecko::Driver::start");
-    static ref GECKO_CONFIG: gecko::Config = {
-        let mut d = gecko::Config::default();
-        d.headless(true);
-        d
-    };
-
     static ref RT: Mutex<runtime::Runtime> =
         Mutex::new(runtime::Runtime::new().expect("tokio runtime"));
     static ref SERVER: TestServer = {
@@ -47,7 +33,7 @@ lazy_static! {
     };
 }
 
-fn new_session() -> Result<sulfur::Client, failure::Error> {
+fn new_session() -> Result<(Box<Drop>, sulfur::Client), failure::Error> {
     let driver = env::var("DRIVER").unwrap_or_else(|e| {
         warn!("$DRIVER not specified, using chromedriver: {:?}", e);
         "chromedriver".into()
@@ -55,11 +41,20 @@ fn new_session() -> Result<sulfur::Client, failure::Error> {
     match &*driver {
         "geckodriver" => {
             info!("Starting instance with {:?}", driver);
-            GECKO_DRIVER.new_session_config(&GECKO_CONFIG)
+            let driver: gecko::Driver = gecko::Driver::start().expect("gecko::Driver::start");
+            let session = driver.new_session_config(
+                &gecko::Config::default().headless(true),
+            )?;
+            Ok((Box::new(driver), session))
+
         }
         "chromedriver" | _ => {
             info!("Starting instance with {:?}", driver);
-            CHROME_DRIVER.new_session_config(&CHROME_CONFIG)
+            let driver = chrome::Driver::start().expect("ChromeDriver::start");
+            let session = driver.new_session_config(
+                chrome::Config::default().headless(true),
+            )?;
+            Ok((Box::new(driver), session))
         }
     }
 }
@@ -67,7 +62,7 @@ fn new_session() -> Result<sulfur::Client, failure::Error> {
 #[test]
 fn can_run_chromedriver() {
     env_logger::try_init().unwrap_or_default();
-    let mut s = new_session().expect("new_session");
+    let (_driver, mut s) = new_session().expect("new_session");
     s.close().expect("close");
 }
 
@@ -116,7 +111,7 @@ fn can_navigate() {
 
     let url = SERVER.url();
 
-    let mut s = new_session().expect("new_session");
+    let (_driver, mut s) = new_session().expect("new_session");
 
     s.visit(&url).expect("visit");
 
@@ -158,7 +153,7 @@ fn can_load_title() {
 
     let url = SERVER.url();
 
-    let s = new_session().expect("new_session");
+    let (_driver, s) = new_session().expect("new_session");
 
     s.visit(&url).expect("visit");
 
@@ -172,7 +167,7 @@ fn find_element_fails_on_missing_element() {
     env_logger::try_init().unwrap_or_default();
 
     let url = SERVER.url();
-    let s = new_session().expect("new_session");
+    let (_driver, s) = new_session().expect("new_session");
 
     s.visit(&url).expect("visit");
     let res = s.find_element(&By::css("#i-do-not-exist"));
@@ -184,7 +179,7 @@ fn find_text_present() {
     env_logger::try_init().unwrap_or_default();
 
     let url = SERVER.url();
-    let s = new_session().expect("new_session");
+    let (_driver, s) = new_session().expect("new_session");
 
     s.visit(&url).expect("visit");
     let elt = s.find_element(&By::css("#an-id")).expect("find #an-id");
@@ -198,7 +193,7 @@ fn find_tag_name() {
     env_logger::try_init().unwrap_or_default();
 
     let url = SERVER.url();
-    let s = new_session().expect("new_session");
+    let (_driver, s) = new_session().expect("new_session");
 
     s.visit(&url).expect("visit");
     let elt = s.find_element(&By::css("#an-id")).expect("find #an-id");
@@ -212,7 +207,7 @@ fn find_multiple_elements() {
     env_logger::try_init().unwrap_or_default();
 
     let url = SERVER.url();
-    let s = new_session().expect("new_session");
+    let (_driver, s) = new_session().expect("new_session");
 
     s.visit(&url).expect("visit");
     let elts = s.find_elements(&By::css("#missing-element")).expect(
@@ -238,7 +233,7 @@ fn find_text_present_from_child() {
     env_logger::try_init().unwrap_or_default();
 
     let url = SERVER.url();
-    let s = new_session().expect("new_session");
+    let (_driver, s) = new_session().expect("new_session");
 
     s.visit(&url).expect("visit");
     let parent = s.find_element(&By::css("#with-children")).expect(
@@ -257,7 +252,7 @@ fn find_multiple_elements_from_child() {
     env_logger::try_init().unwrap_or_default();
 
     let url = SERVER.url();
-    let s = new_session().expect("new_session");
+    let (_driver, s) = new_session().expect("new_session");
 
     s.visit(&url).expect("visit");
     let parent = s.find_element(&By::css("#with-children")).expect(
@@ -285,7 +280,7 @@ fn should_click_links() {
     env_logger::try_init().unwrap_or_default();
 
     let url = SERVER.url();
-    let s = new_session().expect("new_session");
+    let (_driver, s) = new_session().expect("new_session");
     s.visit(&url).expect("visit");
     let main_page = s.current_url().expect("current_url");
     let elt = s.find_element(&By::css(".clickable-link")).expect(
@@ -303,7 +298,7 @@ fn form_submission() {
     env_logger::try_init().unwrap_or_default();
 
     let url = SERVER.url();
-    let s = new_session().expect("new_session");
+    let (_driver, s) = new_session().expect("new_session");
     s.visit(&url).expect("visit");
     let text = s.find_element(&By::css("#the-form input[type='text']"))
         .expect("find text");
@@ -333,7 +328,7 @@ fn form_element_clearing() {
     env_logger::try_init().unwrap_or_default();
 
     let url = SERVER.url();
-    let s = new_session().expect("new_session");
+    let (_driver, s) = new_session().expect("new_session");
     s.visit(&url).expect("visit");
     let text = s.find_element(&By::css("#the-form input[type='text']"))
         .expect("find text");
