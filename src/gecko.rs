@@ -23,12 +23,12 @@ impl Driver {
         let http = reqwest::Client::new();
         let port = unused_port_no()?;
         debug!("Spawning chrome driver on port: {:?}", port);
-        let mut cmd = Command::new("chromedriver");
+        let mut cmd = Command::new("geckodriver");
         cmd.arg(format!("--port={}", port));
         // cmd.arg("--silent");
         // cmd.arg("--verbose");
         debug!("Starting command: {:?}", cmd);
-        let child = cmd.spawn().context("Spawning chrome")?;
+        let child = cmd.spawn().context("Spawning geckodriver")?;
 
         let mut driver = Driver { child, port, http };
 
@@ -43,6 +43,40 @@ impl Driver {
 
         Ok(driver)
     }
+
+    // Returns:
+    // Ie: no status.
+    /*
+    {
+        "value": {
+            "sessionId": "1f150c59-685e-184f-ae5e-8f124166e1c6",
+            "capabilities": {
+            "browserName": "firefox",
+            "browserVersion": "58.0.1",
+            // ...
+            "timeouts": {
+                "implicit": 0,
+                "pageLoad": 300000,
+                "script": 30000
+            }
+            }
+        }
+    } 
+   */
+
+    // On failure:
+  /*
+    {
+        "value": {
+            "error": "session not created",
+            "message": "Session is already started",
+            "stacktrace": ""
+        }
+    }
+  */
+
+    // Also, we don't actually support multiple instances per driver, so we'll
+    // need to defer process creation to here.
 
     pub fn new_session(&self) -> Result<Client, Error> {
         self.new_session_config(&Default::default())
@@ -111,11 +145,8 @@ impl Config {
         NewSessionReq {
             capabilities: Capabilities {
                 always_match: json!({
-                "browserName": "chrome",
-                "goog:chromeOptions" : {
-                    "w3c" : true,
-                    "args": args,
-                }
+                "browserName": "firefox",
+                "moz:firefoxOptions": { "args": args },
              }),
             },
         }
