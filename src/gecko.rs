@@ -9,17 +9,19 @@ use client::{Capabilities, Client};
 use driver::{self, DriverHolder};
 use junk_drawer::unused_port_no;
 
+/// Represents a `geckodriver` process.
 pub struct Driver {
     child: Child,
     port: u16,
     http: reqwest::Client,
 }
-
+/// Allows extra configuration for chrome instances.
 #[derive(Clone, Default)]
 pub struct Config {
     headless: bool,
 }
 
+/// Start a chromedriver instance, along with a new browser session.
 pub fn start(config: &Config) -> Result<DriverHolder, Error> {
     let driver = Driver::start()?;
     let client = driver.new_session_config(config)?;
@@ -30,6 +32,7 @@ pub fn start(config: &Config) -> Result<DriverHolder, Error> {
 }
 
 impl Driver {
+    /// Start a geckodriver instance on an automatically assigned port.
     pub fn start() -> Result<Self, Error> {
         let http = reqwest::Client::new();
         let port = unused_port_no()?;
@@ -55,12 +58,12 @@ impl Driver {
         Ok(driver)
     }
 
-    // Also, we don't actually support multiple instances per driver, so we'll
-    // need to defer process creation to here.
-
+    /// Build a new webdriver session with default sessions.
     pub fn new_session(&self) -> Result<Client, Error> {
         self.new_session_config(&Default::default())
     }
+
+    /// Build a new webdriver session with the specified configuration.
     pub fn new_session_config(&self, config: &Config) -> Result<Client, Error> {
         info!("Starting new session from instance at {}", self.port);
         let client =
@@ -68,6 +71,8 @@ impl Driver {
         Ok(client)
     }
 
+    /// Shut down the geckodriver process. This assumes that the session has
+    /// been shut down seperately.
     pub fn close(&mut self) -> Result<(), Error> {
         self.child.kill()?;
         self.child.wait()?;
@@ -119,6 +124,8 @@ impl driver::Driver for Driver {
 }
 
 impl Config {
+    /// Specifies if the firefox instance should be headless, or whether
+    /// it should show the UI.
     pub fn headless(&mut self, headless: bool) -> &mut Self {
         self.headless = headless;
         self
