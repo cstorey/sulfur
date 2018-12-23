@@ -6,6 +6,7 @@ use client;
 
 /// Marker trait to mark something as a driver.
 pub trait Driver {
+    /// Shut down the driver.
     fn close(&mut self) -> Result<(), Error>;
 }
 
@@ -19,6 +20,7 @@ pub struct DriverHolder {
 }
 
 impl DriverHolder {
+    /// This will shut down both the associated webdriver session, and driver.
     pub fn close(self) -> Result<(), Error> {
         let DriverHolder {
             mut client,
