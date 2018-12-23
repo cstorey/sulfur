@@ -1,3 +1,6 @@
+//! Convenience functionality to to make managing the lifetime of a driver
+//! and a client session easier.
+
 use std::ops::{Deref, DerefMut};
 
 use failure::Error;
