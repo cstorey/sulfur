@@ -55,7 +55,7 @@ fn new_session() -> Result<driver::DriverHolder, failure::Error> {
 #[test]
 fn can_run_driver() {
     env_logger::try_init().unwrap_or_default();
-    let mut s = new_session().expect("new_session");
+    let s = new_session().expect("new_session");
     s.close().expect("close");
 }
 
@@ -104,7 +104,7 @@ fn can_navigate() {
 
     let url = SERVER.url();
 
-    let mut s = new_session().expect("new_session");
+    let s = new_session().expect("new_session");
 
     s.visit(&url).expect("visit");
 

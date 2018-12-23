@@ -108,7 +108,12 @@ impl Drop for Driver {
     }
 }
 
-impl driver::Driver for Driver {}
+impl driver::Driver for Driver {
+    fn close(&mut self) -> Result<(), Error> {
+        self.child.kill()?;
+        Ok(())
+    }
+}
 
 impl Config {
     pub fn headless(&mut self, headless: bool) -> &mut Self {
