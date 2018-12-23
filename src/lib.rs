@@ -1,4 +1,4 @@
-#![warn(missing_docs)]
+#![deny(missing_docs)]
 
 //! Sulfur provides an implementation of the webdriver protocol,
 //! used for remote controlling a browser, as well as functionality for
