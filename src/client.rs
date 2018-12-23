@@ -3,6 +3,7 @@ use serde::de::{self, Deserialize, Deserializer, MapAccess, Visitor};
 use std::fmt;
 use url::percent_encoding::{utf8_percent_encode, PATH_SEGMENT_ENCODE_SET};
 
+/// The representation of a webdriver session.
 #[derive(Debug, Clone)]
 pub struct Client {
     client: reqwest::Client,
@@ -26,12 +27,15 @@ impl HasValue {
     }
 }
 
+/// The representation of a new session request, allowing specification
+/// of capabilities explicitly.
 #[derive(Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
-pub(crate) struct NewSessionReq {
+struct NewSessionReq {
     pub(crate) capabilities: Capabilities,
 }
-// re: https://developer.mozilla.org/en-US/docs/Web/WebDriver/Capabilities
+/// A representation of the [Capabilities](https://developer.mozilla.org/en-US/docs/Web/WebDriver/Capabilities)
+/// we would like from the browser.
 #[derive(Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Capabilities {
@@ -40,7 +44,7 @@ pub struct Capabilities {
 
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
-pub struct NewSessionResp {
+struct NewSessionResp {
     pub(crate) session_id: String,
 }
 
@@ -62,6 +66,7 @@ impl fmt::Display for WdError {
     }
 }
 
+/// This reprsesents a selector for finding elements within a page.
 #[derive(Debug, Serialize, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct By {
@@ -71,6 +76,7 @@ pub struct By {
 
 // See §11.2.1 Locator strategies
 impl By {
+    /// Returns a selector for finding element by a css expression.
     pub fn css<S: Into<String>>(expr: S) -> Self {
         By {
             using: "css selector".into(),
@@ -79,12 +85,10 @@ impl By {
     }
 }
 
+/// The abstract representation of an element on the current page.
 #[derive(Debug, Clone)]
 pub struct Element {
-    // #[serde(rename = "ELEMENT")]
     _id: String,
-    // #[serde(rename = "element-6066-11e4-a52e-4f735466cecf")]
-    // _id2: Option<String>,
 }
 
 impl Element {
@@ -176,24 +180,18 @@ impl<'de> Deserialize<'de> for Element {
 struct PathSeg<'a>(&'a str);
 
 impl Client {
+    /// Creates a new webdriver session with the specified capabilities.
     pub fn new<U: reqwest::IntoUrl>(url: U, capabilities: Capabilities) -> Result<Self, Error> {
         let client = reqwest::Client::new();
         Client::new_with_http(url, capabilities, client)
     }
 
-    /* New session geckodriver:
-    {"value":{"sessionId":"dcd61912-edb7-b842-a480-625f1fa45826","capabilities":{"acceptInsecureCerts":false,"browserName":"firefox","browserVersion":"58.0.1","moz:accessibilityChecks":false,"moz:geckodriverVersion":"0.23.0","moz:headless":false,"moz:processID":6809,"moz:profile":"/var/folders/13/0cgwy88x5p1916xjmpw1fhc40000gn/T/rust_mozprofile.5zyna67LuJNh","moz:webdriverClick":true,"pageLoadStrategy":"normal","platformName":"darwin","platformVersion":"18.2.0","rotatable":false,"timeouts":{"implicit":0,"pageLoad":300000,"script":30000}}}}
-    */
-
-    /* `New session chromedriver:
-        {"sessionId":"a90810adc57f5d6781a12f9b8735407d","status":0,"value":{"acceptInsecureCerts":false,"acceptSslCerts":false,"applicationCacheEnabled":false,"browserConnectionEnabled":false,"browserName":"chrome","chrome":{"chromedriverVersion":"2.45.615355 (d5698f682d8b2742017df6c81e0bd8e6a3063189)","userDataDir":"/var/folders/13/0cgwy88x5p1916xjmpw1fhc40000gn/T/.org.chromium.Chromium.BJONPd"},"cssSelectorsEnabled":true,"databaseEnabled":false,"goog:chromeOptions":{"debuggerAddress":"localhost:53115"},"handlesAlerts":true,"hasTouchScreen":false,"javascriptEnabled":true,"locationContextEnabled":true,"mobileEmulationEnabled":false,"nativeEvents":true,"networkConnectionEnabled":false,"pageLoadStrategy":"normal","platform":"Mac OS X","proxy":{},"rotatable":false,"setWindowRect":true,"strictFileInteractability":false,"takesHeapSnapshot":true,"takesScreenshot":true,"timeouts":{"implicit":0,"pageLoad":300000,"script":30000},"unexpectedAlertBehaviour":"ignore","version":"71.0.3578.98","webStorageEnabled":true}}
-    */
-
     // Ie: chromedriver returns the sessionId as a top-level item, wheras geckodriver (and presumably others)
     // return it under value.
 
     // §8.1 Creating a new session
-    pub fn new_with_http<U: reqwest::IntoUrl>(
+
+    pub(crate) fn new_with_http<U: reqwest::IntoUrl>(
         url: U,
         capabilities: Capabilities,
         client: reqwest::Client,
@@ -210,7 +208,10 @@ impl Client {
             session_id: Some(body.session_id),
         })
     }
+
     // §8.1 Delete session
+
+    /// Terminates the session, possibly closing the browser window.§
     pub fn close(&mut self) -> Result<(), Error> {
         if let Some(session_id) = self.session_id.as_ref() {
             let path = format!("session/{}", PathSeg(&session_id));
@@ -221,6 +222,8 @@ impl Client {
     }
 
     // §9.1 Navigate To
+
+    /// Tells the browser to open the given URL.
     pub fn visit(&self, url: &str) -> Result<(), Error> {
         let path = format!("session/{}/url", PathSeg(self.session()?));
         execute(
@@ -229,30 +232,45 @@ impl Client {
                 .json(&json!({ "url": url })),
         )
     }
+
     // §9.3 Back
+
+    /// Navigates to the previous page in the browser's history, just like
+    /// pressing the back button.
     pub fn back(&self) -> Result<(), Error> {
         let path = format!("session/{}/back", PathSeg(self.session()?));
         execute(self.client.post(self.url.join(&path)?).json(&json!({})))
     }
 
     // §9.4 Forward
+
+    /// Navigates to the next page in the browser's history, just like
+    /// pressing the back button.
     pub fn forward(&self) -> Result<(), Error> {
         let path = format!("session/{}/forward", PathSeg(self.session()?));
         execute(self.client.post(self.url.join(&path)?).json(&json!({})))
     }
 
     // §9.6 Get Title
+
+    /// Fetches the current page's title as a string.
     pub fn title(&self) -> Result<String, Error> {
         let path = format!("session/{}/title", PathSeg(self.session()?));
         execute(self.client.get(self.url.join(&path)?))
     }
+
     // §9.2 Get Current URL
+
+    /// Fetches the browser's current URL, as would be shown in the URL bar.
     pub fn current_url(&self) -> Result<String, Error> {
         let path = format!("session/{}/url", PathSeg(self.session()?));
         execute(self.client.get(self.url.join(&path)?))
     }
 
     // §11.2.2 Find Element
+
+    /// Attempts to lookup a single element by the given selector. Fails if
+    /// Either no elements are found, or more than one is found.
     pub fn find_element(&self, by: &By) -> Result<Element, Error> {
         let path = format!("session/{}/element", PathSeg(self.session()?));
         let req = self.client.post(self.url.join(&path)?).json(&by);
@@ -262,6 +280,9 @@ impl Client {
     }
 
     // §11.2.3 Find Elements
+
+    /// Attempts to lookup multiple elements by the given selector. May
+    /// return zero or more.
     pub fn find_elements(&self, by: &By) -> Result<Vec<Element>, Error> {
         let path = format!("session/{}/elements", PathSeg(self.session()?));
         let req = self.client.post(self.url.join(&path)?).json(by);
@@ -271,6 +292,9 @@ impl Client {
     }
 
     // §11.2.4 Find Element From Element
+
+    /// Find a single element relative to start element `elt` with the selector.
+    /// Fails if zero or more than one are found.
     pub fn find_element_from(&self, elt: &Element, by: &By) -> Result<Element, Error> {
         let path = format!(
             "session/{}/element/{}/element",
@@ -284,6 +308,9 @@ impl Client {
     }
 
     // §11.2.5 Find Elements From Element
+
+    /// Attempts to lookup multiple elements relative to the start element
+    /// `elt` by the given selector. May return zero or more.
     pub fn find_elements_from(&self, elt: &Element, by: &By) -> Result<Vec<Element>, Error> {
         let path = format!(
             "session/{}/element/{}/elements",
@@ -297,6 +324,9 @@ impl Client {
     }
 
     // §11.3.5 Get Element Text
+
+    /// Get the contained text content from the given element, including
+    /// that from child elementes.
     pub fn text(&self, elt: &Element) -> Result<String, Error> {
         let path = format!(
             "session/{}/element/{}/text",
@@ -310,6 +340,8 @@ impl Client {
     }
 
     // §11.3.6 Get Element Tag Name
+
+    /// Fetch the tag name of the given element.
     pub fn name(&self, elt: &Element) -> Result<String, Error> {
         let path = format!(
             "session/{}/element/{}/name",
@@ -323,6 +355,8 @@ impl Client {
     }
 
     // §11.4.1 Element Click
+
+    /// Simulates clicking on the specified element.
     pub fn click(&self, elt: &Element) -> Result<(), Error> {
         let path = format!(
             "session/{}/element/{}/click",
@@ -335,6 +369,8 @@ impl Client {
     }
 
     // §11.4.3 Element Send Keys
+
+    /// Simulates typing into the given element, such as a text input.
     pub fn send_keys(&self, elt: &Element, keys: &'static str) -> Result<(), Error> {
         let url = self.url.join(&format!(
             "session/{}/element/{}/value",
@@ -349,6 +385,8 @@ impl Client {
         Ok(())
     }
     // §11.4.2 Element Clear
+
+    /// Clears the given element, such as an input field.
     pub fn clear(&self, elt: &Element) -> Result<(), Error> {
         let url = self.url.join(&format!(
             "session/{}/element/{}/clear",
