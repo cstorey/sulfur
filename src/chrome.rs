@@ -5,7 +5,7 @@ use failure::Error;
 use failure::ResultExt;
 use reqwest;
 
-use client::{Capabilities, Client, NewSessionReq};
+use client::{Capabilities, Client};
 use driver::{self, DriverHolder};
 use junk_drawer::unused_port_no;
 
@@ -61,7 +61,7 @@ impl Driver {
     pub fn new_session_config(&self, config: &Config) -> Result<Client, Error> {
         info!("Starting new session from instance at {}", self.port);
         let client =
-            Client::new_with_http(&self.url(), config.to_new_session(), self.http.clone())?;
+            Client::new_with_http(&self.url(), config.to_capabilities(), self.http.clone())?;
         Ok(client)
     }
 
@@ -121,21 +121,19 @@ impl Config {
         self
     }
 
-    fn to_new_session(&self) -> NewSessionReq {
+    fn to_capabilities(&self) -> Capabilities {
         let mut args = vec![];
         if self.headless {
             args.push("--headless")
         }
-        NewSessionReq {
-            capabilities: Capabilities {
-                always_match: json!({
-                   "browserName": "chrome",
-                   "goog:chromeOptions" : {
-                       "w3c" : true,
-                       "args": args,
-                   }
-                }),
-            },
+        Capabilities {
+            always_match: json!({
+               "browserName": "chrome",
+               "goog:chromeOptions" : {
+                   "w3c" : true,
+                   "args": args,
+               }
+            }),
         }
     }
 }

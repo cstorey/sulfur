@@ -28,7 +28,7 @@ impl HasValue {
 
 #[derive(Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
-pub struct NewSessionReq {
+pub(crate) struct NewSessionReq {
     pub(crate) capabilities: Capabilities,
 }
 // re: https://developer.mozilla.org/en-US/docs/Web/WebDriver/Capabilities
@@ -176,9 +176,9 @@ impl<'de> Deserialize<'de> for Element {
 struct PathSeg<'a>(&'a str);
 
 impl Client {
-    pub fn new<U: reqwest::IntoUrl>(url: U, req: NewSessionReq) -> Result<Self, Error> {
+    pub fn new<U: reqwest::IntoUrl>(url: U, capabilities: Capabilities) -> Result<Self, Error> {
         let client = reqwest::Client::new();
-        Client::new_with_http(url, req, client)
+        Client::new_with_http(url, capabilities, client)
     }
 
     /* New session geckodriver:
@@ -195,9 +195,10 @@ impl Client {
     // §8.1 Creating a new session
     pub fn new_with_http<U: reqwest::IntoUrl>(
         url: U,
-        req: NewSessionReq,
+        capabilities: Capabilities,
         client: reqwest::Client,
     ) -> Result<Self, Error> {
+        let req = NewSessionReq { capabilities };
         let url = url.into_url()?;
         let body: NewSessionResp = execute(client.post(url.join("session")?).json(&req))?;
 
