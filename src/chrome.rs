@@ -1,11 +1,13 @@
-use client::{Capabilities, Client, NewSessionReq};
-use failure::Error;
-use junk_drawer::unused_port_no;
-use reqwest;
 use std::process::{Child, Command};
 use std::{thread, time};
 
+use failure::Error;
 use failure::ResultExt;
+use reqwest;
+
+use client::{Capabilities, Client, NewSessionReq};
+use driver::{self, DriverHolder};
+use junk_drawer::unused_port_no;
 
 pub struct Driver {
     child: Child,
@@ -16,6 +18,15 @@ pub struct Driver {
 #[derive(Clone, Default)]
 pub struct Config {
     headless: bool,
+}
+
+pub fn start(config: &Config) -> Result<DriverHolder, Error> {
+    let driver = Driver::start()?;
+    let client = driver.new_session_config(config)?;
+    Ok(DriverHolder {
+        driver: Box::new(driver),
+        client: client,
+    })
 }
 
 impl Driver {
@@ -94,6 +105,13 @@ impl Drop for Driver {
     fn drop(&mut self) {
         debug!("Dropping child");
         let _ = self.child.kill();
+    }
+}
+
+impl driver::Driver for Driver {
+    fn close(&mut self) -> Result<(), Error> {
+        self.child.kill()?;
+        Ok(())
     }
 }
 
