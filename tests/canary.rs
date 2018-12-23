@@ -33,7 +33,7 @@ lazy_static! {
     };
 }
 
-fn new_session() -> Result<driver::DriverHolder, failure::Error> {
+fn new_session() -> Result<DriverHolder, failure::Error> {
     let driver = env::var("DRIVER").unwrap_or_else(|e| {
         warn!("$DRIVER not specified, using chromedriver: {:?}", e);
         "chromedriver".into()

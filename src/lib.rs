@@ -22,7 +22,8 @@ mod junk_drawer;
 
 pub mod chrome;
 mod client;
-pub mod driver;
+mod driver;
 pub mod gecko;
 
 pub use client::*;
+pub use driver::*;
