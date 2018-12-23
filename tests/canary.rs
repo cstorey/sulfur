@@ -33,7 +33,7 @@ lazy_static! {
     };
 }
 
-fn new_session() -> Result<(Box<Drop>, sulfur::Client), failure::Error> {
+fn new_session() -> Result<driver::DriverHolder, failure::Error> {
     let driver = env::var("DRIVER").unwrap_or_else(|e| {
         warn!("$DRIVER not specified, using chromedriver: {:?}", e);
         "chromedriver".into()
@@ -41,23 +41,21 @@ fn new_session() -> Result<(Box<Drop>, sulfur::Client), failure::Error> {
     match &*driver {
         "geckodriver" => {
             info!("Starting instance with {:?}", driver);
-            let driver: gecko::Driver = gecko::Driver::start().expect("gecko::Driver::start");
-            let session = driver.new_session_config(&gecko::Config::default().headless(true))?;
-            Ok((Box::new(driver), session))
+            let driver = gecko::start(gecko::Config::default().headless(true))?;
+            Ok(driver)
         }
         "chromedriver" | _ => {
             info!("Starting instance with {:?}", driver);
-            let driver = chrome::Driver::start().expect("ChromeDriver::start");
-            let session = driver.new_session_config(chrome::Config::default().headless(true))?;
-            Ok((Box::new(driver), session))
+            let driver = chrome::start(chrome::Config::default().headless(true))?;
+            Ok(driver)
         }
     }
 }
 
 #[test]
-fn can_run_chromedriver() {
+fn can_run_driver() {
     env_logger::try_init().unwrap_or_default();
-    let (_driver, mut s) = new_session().expect("new_session");
+    let mut s = new_session().expect("new_session");
     s.close().expect("close");
 }
 
@@ -106,7 +104,7 @@ fn can_navigate() {
 
     let url = SERVER.url();
 
-    let (_driver, mut s) = new_session().expect("new_session");
+    let mut s = new_session().expect("new_session");
 
     s.visit(&url).expect("visit");
 
@@ -155,7 +153,7 @@ fn can_load_title() {
 
     let url = SERVER.url();
 
-    let (_driver, s) = new_session().expect("new_session");
+    let s = new_session().expect("new_session");
 
     s.visit(&url).expect("visit");
 
@@ -168,7 +166,7 @@ fn find_element_fails_on_missing_element() {
     env_logger::try_init().unwrap_or_default();
 
     let url = SERVER.url();
-    let (_driver, s) = new_session().expect("new_session");
+    let s = new_session().expect("new_session");
 
     s.visit(&url).expect("visit");
     let res = s.find_element(&By::css("#i-do-not-exist"));
@@ -180,7 +178,7 @@ fn find_text_present() {
     env_logger::try_init().unwrap_or_default();
 
     let url = SERVER.url();
-    let (_driver, s) = new_session().expect("new_session");
+    let s = new_session().expect("new_session");
 
     s.visit(&url).expect("visit");
     let elt = s.find_element(&By::css("#an-id")).expect("find #an-id");
@@ -194,7 +192,7 @@ fn find_tag_name() {
     env_logger::try_init().unwrap_or_default();
 
     let url = SERVER.url();
-    let (_driver, s) = new_session().expect("new_session");
+    let s = new_session().expect("new_session");
 
     s.visit(&url).expect("visit");
     let elt = s.find_element(&By::css("#an-id")).expect("find #an-id");
@@ -208,7 +206,7 @@ fn find_multiple_elements() {
     env_logger::try_init().unwrap_or_default();
 
     let url = SERVER.url();
-    let (_driver, s) = new_session().expect("new_session");
+    let s = new_session().expect("new_session");
 
     s.visit(&url).expect("visit");
     let elts = s
@@ -234,7 +232,7 @@ fn find_text_present_from_child() {
     env_logger::try_init().unwrap_or_default();
 
     let url = SERVER.url();
-    let (_driver, s) = new_session().expect("new_session");
+    let s = new_session().expect("new_session");
 
     s.visit(&url).expect("visit");
     let parent = s
@@ -253,7 +251,7 @@ fn find_multiple_elements_from_child() {
     env_logger::try_init().unwrap_or_default();
 
     let url = SERVER.url();
-    let (_driver, s) = new_session().expect("new_session");
+    let s = new_session().expect("new_session");
 
     s.visit(&url).expect("visit");
     let parent = s
@@ -282,7 +280,7 @@ fn should_click_links() {
     env_logger::try_init().unwrap_or_default();
 
     let url = SERVER.url();
-    let (_driver, s) = new_session().expect("new_session");
+    let s = new_session().expect("new_session");
     s.visit(&url).expect("visit");
     let main_page = s.current_url().expect("current_url");
     let elt = s
@@ -300,7 +298,7 @@ fn form_submission() {
     env_logger::try_init().unwrap_or_default();
 
     let url = SERVER.url();
-    let (_driver, s) = new_session().expect("new_session");
+    let s = new_session().expect("new_session");
     s.visit(&url).expect("visit");
     let text = s
         .find_element(&By::css("#the-form input[type='text']"))
@@ -332,7 +330,7 @@ fn form_element_clearing() {
     env_logger::try_init().unwrap_or_default();
 
     let url = SERVER.url();
-    let (_driver, s) = new_session().expect("new_session");
+    let s = new_session().expect("new_session");
     s.visit(&url).expect("visit");
     let text = s
         .find_element(&By::css("#the-form input[type='text']"))

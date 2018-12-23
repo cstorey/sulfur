@@ -16,6 +16,7 @@ mod junk_drawer;
 
 pub mod chrome;
 mod client;
+pub mod driver;
 pub mod gecko;
 
 pub use client::*;
