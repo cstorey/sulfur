@@ -1,3 +1,5 @@
+//! Functionality for starting a dedicated geckodriver and webdriver session for firefox.
+
 use std::process::{Child, Command};
 use std::{thread, time};
 

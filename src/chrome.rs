@@ -1,3 +1,5 @@
+//! Functionality for starting a dedicated chromedriver and webdriver session for Chrome.
+
 use std::process::{Child, Command};
 use std::{thread, time};
 
