@@ -4,8 +4,10 @@ use failure::Error;
 
 use client;
 
-/// Marker trait to mark something as a driver.
+/// This marks that something is a driver, that is it manages an instance of
+/// something used to remote control a browser.
 pub trait Driver {
+    /// Shut down the driver.
     fn close(&mut self) -> Result<(), Error>;
 }
 
@@ -19,6 +21,7 @@ pub struct DriverHolder {
 }
 
 impl DriverHolder {
+    /// This will shut down both the associated webdriver session, and driver.
     pub fn close(self) -> Result<(), Error> {
         let DriverHolder {
             mut client,

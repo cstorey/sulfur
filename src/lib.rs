@@ -1,3 +1,9 @@
+#![deny(missing_docs)]
+
+//! Sulfur provides an implementation of the webdriver protocol,
+//! used for remote controlling a browser, as well as functionality for
+//! conveniently running a browser locally.
+
 extern crate reqwest;
 #[macro_use]
 extern crate serde_json;
@@ -16,7 +22,8 @@ mod junk_drawer;
 
 pub mod chrome;
 mod client;
-pub mod driver;
+mod driver;
 pub mod gecko;
 
 pub use client::*;
+pub use driver::*;
