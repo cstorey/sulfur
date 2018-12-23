@@ -9,17 +9,20 @@ use client::{Capabilities, Client};
 use driver::{self, DriverHolder};
 use junk_drawer::unused_port_no;
 
+/// Represents a running instance of `chromedriver`.
 pub struct Driver {
     child: Child,
     port: u16,
     http: reqwest::Client,
 }
 
+/// Allows extra configuration for chrome instances.
 #[derive(Clone, Default)]
 pub struct Config {
     headless: bool,
 }
 
+/// Start a chromedriver instance, along with a new browser session.
 pub fn start(config: &Config) -> Result<DriverHolder, Error> {
     let driver = Driver::start()?;
     let client = driver.new_session_config(config)?;
@@ -30,6 +33,7 @@ pub fn start(config: &Config) -> Result<DriverHolder, Error> {
 }
 
 impl Driver {
+    /// Start a chromedriver instance on an automatically assigned port.
     pub fn start() -> Result<Self, Error> {
         let http = reqwest::Client::new();
         let port = unused_port_no()?;
@@ -55,9 +59,12 @@ impl Driver {
         Ok(driver)
     }
 
+    /// Create a new webdriver session with the default configuration.
     pub fn new_session(&self) -> Result<Client, Error> {
         self.new_session_config(&Default::default())
     }
+
+    /// Start a new webdriver session with the given config.
     pub fn new_session_config(&self, config: &Config) -> Result<Client, Error> {
         info!("Starting new session from instance at {}", self.port);
         let client =
@@ -65,6 +72,8 @@ impl Driver {
         Ok(client)
     }
 
+    /// Forcibly terminate the chromedriver instance. This assumes that the
+    /// webdriver client session has been shut down seperately.
     pub fn close(&mut self) -> Result<(), Error> {
         self.child.kill()?;
         self.child.wait()?;
@@ -116,6 +125,7 @@ impl driver::Driver for Driver {
 }
 
 impl Config {
+    /// Speciofy that if the session should be headless, ie: not show the UI.
     pub fn headless(&mut self, headless: bool) -> &mut Self {
         self.headless = headless;
         self
