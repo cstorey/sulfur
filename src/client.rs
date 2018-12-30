@@ -59,6 +59,22 @@ struct WdError {
     value: WdErrorVal,
 }
 
+/// Describes the timeouts used by the webserver service.
+
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct Timeouts {
+    /// Implicit timeout in milliseconds. Specifies how long the driver will
+    /// wait for an element to be found, or for an element to be come interactive.
+    pub implicit: u64,
+    /// Page load timeout in milliseconds. Navigation will fail if a page load
+    /// takes longer than this.
+    pub page_load: u64,
+    /// Script timeout in milliseconds. How long the implementation should
+    /// wait for a script to run.
+    pub script: u64,
+}
+
 impl fmt::Display for WdError {
     fn fmt(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
         write!(fmt, "{}", self.value.message)
@@ -129,7 +145,7 @@ impl Client {
         })
     }
 
-    // §8.1 Delete session
+    // §8.2 Delete session
 
     /// Terminates the session, possibly closing the browser window.§
     pub fn close(&mut self) -> Result<(), Error> {
@@ -139,6 +155,24 @@ impl Client {
         }
         self.session_id = None;
         Ok(())
+    }
+
+    // §8.4 Get Timeouts
+
+    /// Read the current set of timeouts.
+    pub fn timeouts(&self) -> Result<Timeouts, Error> {
+        let path = format!("session/{}/timeouts", PathSeg(self.session()?));
+        Ok(execute(self.client.get(self.url.join(&path)?))?)
+    }
+
+    // §8.5 Set Timeouts
+
+    /// Change the current set of timeouts.
+    pub fn set_timeouts(&self, timeouts: &Timeouts) -> Result<(), Error> {
+        let path = format!("session/{}/timeouts", PathSeg(self.session()?));
+        Ok(execute(
+            self.client.post(self.url.join(&path)?).json(timeouts),
+        )?)
     }
 
     // §9.1 Navigate To

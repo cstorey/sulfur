@@ -367,3 +367,19 @@ fn form_element_clearing() {
         url
     )
 }
+
+#[test]
+fn timeouts() {
+    env_logger::try_init().unwrap_or_default();
+
+    let url = SERVER.url();
+    let s = new_session().expect("new_session");
+    s.visit(&url).expect("visit");
+
+    s.set_timeouts(&Timeouts {
+        ..Timeouts::default()
+    })
+    .expect("set timeouts");
+
+    let _t = s.timeouts().expect("get timeouts");
+}
