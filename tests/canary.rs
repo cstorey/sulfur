@@ -383,3 +383,44 @@ fn timeouts() {
 
     let _t = s.timeouts().expect("get timeouts");
 }
+
+#[test]
+fn window_handles() {
+    env_logger::try_init().unwrap_or_default();
+
+    let url = SERVER.url();
+    let s = new_session().expect("new_session");
+    s.visit(&url).expect("visit");
+
+    let main_window = s.window().expect("get window");
+    let known_windows = s.windows().expect("get windows");
+
+    assert_eq!(vec![main_window.clone()], known_windows);
+
+    let opener_link = s
+        .find_element(&By::css(".new-window"))
+        .expect("find_element");
+
+    s.click(&opener_link).expect("click link");
+    let known_windows = s.windows().expect("get windows");
+    assert_eq!(2, known_windows.len());
+    let other_window = known_windows
+        .iter()
+        .cloned()
+        .find(|w| w != &main_window)
+        .expect("other window");
+
+    // Yes, we switch to the current window. This would be easier if
+    // `/session/{session}/window/new` was supported anywhere but the w3c spec.
+    s.switch_to_window(&other_window).expect("switch to window");
+    let other_window2 = s.window().expect("get window");
+    assert_eq!(other_window, other_window2);
+
+    let other_url = s.current_url().expect("current_url");
+
+    assert!(
+        other_url.contains("#new-window"),
+        "New window URL should contain `#new-window`, was: {:?}",
+        other_url,
+    )
+}

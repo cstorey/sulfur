@@ -75,6 +75,10 @@ pub struct Timeouts {
     pub script: u64,
 }
 
+/// Handle for a browser window.
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub struct Window(String);
+
 impl fmt::Display for WdError {
     fn fmt(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
         write!(fmt, "{}", self.value.message)
@@ -228,6 +232,33 @@ impl Client {
     pub fn current_url(&self) -> Result<String, Error> {
         let path = format!("session/{}/url", PathSeg(self.session()?));
         execute(self.client.get(self.url.join(&path)?))
+    }
+
+    // §10.1 Get Current Window handle
+
+    /// Fetches the active window handle
+    pub fn window(&self) -> Result<Window, Error> {
+        let path = format!("session/{}/window", PathSeg(self.session()?));
+        execute(self.client.get(self.url.join(&path)?))
+    }
+
+    // §10.4 Get Current Window handles
+
+    /// Lists all window handles.
+    pub fn windows(&self) -> Result<Vec<Window>, Error> {
+        let path = format!("session/{}/window/handles", PathSeg(self.session()?));
+        execute(self.client.get(self.url.join(&path)?))
+    }
+
+    // §10.5 Create Window
+
+    /// Creates a new browser window.
+    pub fn switch_to_window(&self, window: &Window) -> Result<(), Error> {
+        let path = format!("session/{}/window", PathSeg(self.session()?));
+        let body = json!({
+            "handle": window,
+        });
+        execute(self.client.post(self.url.join(&path)?).json(&body))
     }
 
     // §11.2.2 Find Element
@@ -401,7 +432,9 @@ where
             Err(WdError { value: value }.into())
         }
     } else {
-        let content_type = res.headers().get(reqwest::header::CONTENT_TYPE)
+        let content_type = res
+            .headers()
+            .get(reqwest::header::CONTENT_TYPE)
             .and_then(|v| v.to_str().ok())
             .unwrap_or("application/octet-stream")
             .to_string();
