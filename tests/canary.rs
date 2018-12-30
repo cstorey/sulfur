@@ -402,6 +402,9 @@ fn window_handles() {
         .expect("find_element");
 
     s.click(&opener_link).expect("click link");
+
+    assert_eq!(url, s.current_url().expect("current url"));
+
     let known_windows = s.windows().expect("get windows");
     assert_eq!(2, known_windows.len());
     let other_window = known_windows
