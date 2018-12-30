@@ -134,6 +134,14 @@ fn can_navigate() {
         main_page
     );
 
+    s.refresh().expect("refresh page");
+    let current2 = s.current_url().expect("current_url");
+    assert_eq!(
+        current, current2,
+        "current URL: {:?} still on {:?}",
+        current2, current
+    );
+
     s.forward().expect("back");
 
     let current = s.current_url().expect("current_url");

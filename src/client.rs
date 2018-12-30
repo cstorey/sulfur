@@ -171,6 +171,15 @@ impl Client {
         execute(self.client.post(self.url.join(&path)?).json(&json!({})))
     }
 
+    // §9.5 Refresh
+
+    /// Reloads the current page from the server, just like
+    /// pressing the "refresh" button.
+    pub fn refresh(&self) -> Result<(), Error> {
+        let path = format!("session/{}/refresh", PathSeg(self.session()?));
+        execute(self.client.post(self.url.join(&path)?).json(&json!({})))
+    }
+
     // §9.6 Get Title
 
     /// Fetches the current page's title as a string.
