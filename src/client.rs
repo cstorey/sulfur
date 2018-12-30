@@ -59,6 +59,26 @@ struct WdError {
     value: WdErrorVal,
 }
 
+/// Describes the timeouts used by the webserver service.
+
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct Timeouts {
+    /// Implicit timeout in milliseconds. Specifies how long the driver will
+    /// wait for an element to be found, or for an element to be come interactive.
+    pub implicit: u64,
+    /// Page load timeout in milliseconds. Navigation will fail if a page load
+    /// takes longer than this.
+    pub page_load: u64,
+    /// Script timeout in milliseconds. How long the implementation should
+    /// wait for a script to run.
+    pub script: u64,
+}
+
+/// Handle for a browser window.
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub struct Window(String);
+
 impl fmt::Display for WdError {
     fn fmt(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
         write!(fmt, "{}", self.value.message)
@@ -129,7 +149,7 @@ impl Client {
         })
     }
 
-    // §8.1 Delete session
+    // §8.2 Delete session
 
     /// Terminates the session, possibly closing the browser window.§
     pub fn close(&mut self) -> Result<(), Error> {
@@ -139,6 +159,24 @@ impl Client {
         }
         self.session_id = None;
         Ok(())
+    }
+
+    // §8.4 Get Timeouts
+
+    /// Read the current set of timeouts.
+    pub fn timeouts(&self) -> Result<Timeouts, Error> {
+        let path = format!("session/{}/timeouts", PathSeg(self.session()?));
+        Ok(execute(self.client.get(self.url.join(&path)?))?)
+    }
+
+    // §8.5 Set Timeouts
+
+    /// Change the current set of timeouts.
+    pub fn set_timeouts(&self, timeouts: &Timeouts) -> Result<(), Error> {
+        let path = format!("session/{}/timeouts", PathSeg(self.session()?));
+        Ok(execute(
+            self.client.post(self.url.join(&path)?).json(timeouts),
+        )?)
     }
 
     // §9.1 Navigate To
@@ -171,6 +209,15 @@ impl Client {
         execute(self.client.post(self.url.join(&path)?).json(&json!({})))
     }
 
+    // §9.5 Refresh
+
+    /// Reloads the current page from the server, just like
+    /// pressing the "refresh" button.
+    pub fn refresh(&self) -> Result<(), Error> {
+        let path = format!("session/{}/refresh", PathSeg(self.session()?));
+        execute(self.client.post(self.url.join(&path)?).json(&json!({})))
+    }
+
     // §9.6 Get Title
 
     /// Fetches the current page's title as a string.
@@ -185,6 +232,33 @@ impl Client {
     pub fn current_url(&self) -> Result<String, Error> {
         let path = format!("session/{}/url", PathSeg(self.session()?));
         execute(self.client.get(self.url.join(&path)?))
+    }
+
+    // §10.1 Get Current Window handle
+
+    /// Fetches the active window handle
+    pub fn window(&self) -> Result<Window, Error> {
+        let path = format!("session/{}/window", PathSeg(self.session()?));
+        execute(self.client.get(self.url.join(&path)?))
+    }
+
+    // §10.4 Get Current Window handles
+
+    /// Lists all window handles.
+    pub fn windows(&self) -> Result<Vec<Window>, Error> {
+        let path = format!("session/{}/window/handles", PathSeg(self.session()?));
+        execute(self.client.get(self.url.join(&path)?))
+    }
+
+    // §10.5 Create Window
+
+    /// Creates a new browser window.
+    pub fn switch_to_window(&self, window: &Window) -> Result<(), Error> {
+        let path = format!("session/{}/window", PathSeg(self.session()?));
+        let body = json!({
+            "handle": window,
+        });
+        execute(self.client.post(self.url.join(&path)?).json(&body))
     }
 
     // §11.2.2 Find Element
@@ -358,8 +432,22 @@ where
             Err(WdError { value: value }.into())
         }
     } else {
-        let json: serde_json::Value = res.json()?;
-        bail!("Error on execution: {:?} / {:?}", res, json);
+        let content_type = res
+            .headers()
+            .get(reqwest::header::CONTENT_TYPE)
+            .and_then(|v| v.to_str().ok())
+            .unwrap_or("application/octet-stream")
+            .to_string();
+
+        if content_type.starts_with("application/json") {
+            let json: serde_json::Value = res.json()?;
+            bail!("Error on execution: {:?} / {:?}", res, json);
+        } else if content_type.starts_with("text/") {
+            let message = res.text()?;
+            bail!("Error on execution: {:?} / {:?}", res, message);
+        } else {
+            bail!("Error on execution: {:?}", res);
+        }
     }
 }
 
