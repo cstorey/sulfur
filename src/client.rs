@@ -401,8 +401,20 @@ where
             Err(WdError { value: value }.into())
         }
     } else {
-        let json: serde_json::Value = res.json()?;
-        bail!("Error on execution: {:?} / {:?}", res, json);
+        let content_type = res.headers().get(reqwest::header::CONTENT_TYPE)
+            .and_then(|v| v.to_str().ok())
+            .unwrap_or("application/octet-stream")
+            .to_string();
+
+        if content_type.starts_with("application/json") {
+            let json: serde_json::Value = res.json()?;
+            bail!("Error on execution: {:?} / {:?}", res, json);
+        } else if content_type.starts_with("text/") {
+            let message = res.text()?;
+            bail!("Error on execution: {:?} / {:?}", res, message);
+        } else {
+            bail!("Error on execution: {:?}", res);
+        }
     }
 }
 
