@@ -10,12 +10,14 @@ extern crate log;
 extern crate failure;
 extern crate url;
 
+use std::collections::{BTreeMap, BTreeSet};
 use std::env;
 use std::net::SocketAddr;
 use std::sync::Mutex;
+use std::{thread, time};
 
 use futures::sync::oneshot;
-use std::collections::BTreeMap;
+
 use sulfur::chrome;
 use sulfur::*;
 use tokio::runtime;
@@ -403,7 +405,12 @@ fn window_handles() {
 
     s.click(&opener_link).expect("click link");
 
-    assert_eq!(url, s.current_url().expect("current url"));
+    let known = known_windows.iter().cloned().collect::<BTreeSet<_>>();
+    wait_until(time::Duration::from_secs(10), || {
+        let current = s.windows()?.into_iter().collect::<BTreeSet<_>>();
+        Ok(current != known)
+    })
+    .expect("Wait for window open");
 
     let known_windows = s.windows().expect("get windows");
     assert_eq!(2, known_windows.len());
@@ -426,4 +433,19 @@ fn window_handles() {
         "New window URL should contain `#new-window`, was: {:?}",
         other_url,
     )
+}
+
+fn wait_until<F: FnMut() -> Result<bool, failure::Error>>(
+    deadline: time::Duration,
+    mut check: F,
+) -> Result<bool, failure::Error> {
+    let mut pause_time = time::Duration::from_millis(1);
+    let started_at = time::Instant::now();
+    while started_at.elapsed() < deadline && !check()? {
+        debug!("Pausing for {:?}", pause_time);
+        thread::sleep(pause_time);
+        pause_time *= 2;
+    }
+
+    Ok(check()?)
 }
