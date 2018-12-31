@@ -105,7 +105,7 @@ impl By {
 }
 
 /// The abstract representation of an element on the current page.
-#[derive(Debug, Deserialize, Clone)]
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct Element {
     #[serde(rename = "element-6066-11e4-a52e-4f735466cecf")]
     _id: String,
@@ -259,6 +259,24 @@ impl Client {
     pub fn windows(&self) -> Result<Vec<Window>, Error> {
         let path = format!("session/{}/window/handles", PathSeg(self.session()?));
         execute(self.client.get(self.url.join(&path)?))
+    }
+
+    // §10.5 Switch to frame
+
+    /// Switch to the frame by element reference
+    pub fn switch_to_frame(&self, frame: Option<&Element>) -> Result<(), Error> {
+        let path = format!("session/{}/frame", PathSeg(self.session()?));
+        execute(
+            self.client
+                .post(self.url.join(&path)?)
+                .json(&json!({ "id": frame })),
+        )
+    }
+
+    /// Switch to the parent frame
+    pub fn switch_to_parent_frame(&self) -> Result<(), Error> {
+        let path = format!("session/{}/frame/parent", PathSeg(self.session()?));
+        execute(self.client.post(self.url.join(&path)?).json(&json!({})))
     }
 
     // §11.2.2 Find Element

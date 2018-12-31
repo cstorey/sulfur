@@ -435,6 +435,78 @@ fn window_handles() {
     )
 }
 
+#[test]
+fn frames_by_ref() {
+    env_logger::try_init().unwrap_or_default();
+
+    let url = SERVER.url();
+    let s = new_session().expect("new_session");
+    s.visit(&url).expect("visit");
+
+    let content = s
+        .find_elements(&By::css("#inner-content"))
+        .expect("find inner content");
+    assert_eq!(
+        Vec::<Element>::new(),
+        content,
+        "Finding element within an iframe should yield no item"
+    );
+
+    let iframe = s.find_element(&By::css("iframe")).expect("find iframe");
+    s.switch_to_frame(Some(&iframe)).expect("switch to frame");
+    let content = s
+        .find_elements(&By::css("#inner-content"))
+        .expect("find inner content");
+    assert_eq!(
+        1,
+        content.len(),
+        "Looking for #inner-content in iframe: saw {:?}",
+        content
+    );
+
+    s.switch_to_frame(None).expect("switch to default");
+    let content = s
+        .find_elements(&By::css("#inner-content"))
+        .expect("find inner content");
+    assert_eq!(
+        Vec::<Element>::new(),
+        content,
+        "Looking for #inner-content in iframe: saw {:?}",
+        content
+    )
+}
+
+#[test]
+fn frames_parent() {
+    env_logger::try_init().unwrap_or_default();
+
+    let url = SERVER.url();
+    let s = new_session().expect("new_session");
+    s.visit(&url).expect("visit");
+
+    let iframe = s.find_element(&By::css("iframe")).expect("find iframe");
+    s.switch_to_frame(Some(&iframe)).expect("switch to frame");
+    let content = s
+        .find_elements(&By::css("#inner-content"))
+        .expect("find inner content");
+    assert_eq!(
+        1,
+        content.len(),
+        "Looking for #inner-content in iframe: saw {:?}",
+        content
+    );
+
+    s.switch_to_parent_frame().expect("switch to parent");
+    let content = s
+        .find_elements(&By::css("#inner-content"))
+        .expect("find inner content");
+    assert_eq!(
+        Vec::<Element>::new(),
+        content,
+        "Looking for #inner-content in top frame, should be empty"
+    )
+}
+
 fn wait_until<F: FnMut() -> Result<bool, failure::Error>>(
     deadline: time::Duration,
     mut check: F,
