@@ -112,6 +112,15 @@ impl By {
             value: expr.into(),
         }
     }
+
+    // 11.2.1.3 Partial Link text
+    /// Returns a selector for finding element link text
+    pub fn partial_link_text<S: Into<String>>(expr: S) -> Self {
+        By {
+            using: "partial link text".into(),
+            value: expr.into(),
+        }
+    }
 }
 
 /// The abstract representation of an element on the current page.

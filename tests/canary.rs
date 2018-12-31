@@ -214,6 +214,22 @@ fn find_via_link_text() {
 }
 
 #[test]
+fn find_via_partial_link_text() {
+    env_logger::try_init().unwrap_or_default();
+
+    let url = SERVER.url();
+    let s = new_session().expect("new_session");
+
+    s.visit(&url).expect("visit");
+    let elt = s
+        .find_element(&By::partial_link_text("ink targe"))
+        .expect("find Some link");
+    println!("Elt: {:?}", elt);
+    let text_content = s.text(&elt).expect("read text");
+    assert_eq!(text_content.trim(), "Link target");
+}
+
+#[test]
 fn find_tag_name() {
     env_logger::try_init().unwrap_or_default();
 

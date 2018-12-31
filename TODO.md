@@ -40,7 +40,7 @@
     * 11.2.1 Locator strategies
       * [x] 11.2.1.1 CSS selectors
       * [x] 11.2.1.2 Link text
-      * [ ] 11.2.1.3 Partial link text
+      * [x] 11.2.1.3 Partial link text
       * [ ] 11.2.1.4 Tag name
       * [ ] 11.2.1.5 XPath
     * [x] 11.2.2 Find Element
