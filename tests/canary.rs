@@ -432,7 +432,10 @@ fn window_handles() {
         other_url.contains("#new-window"),
         "New window URL should contain `#new-window`, was: {:?}",
         other_url,
-    )
+    );
+
+    let new_handles = s.close_window().expect("close window");
+    assert_eq!(vec![main_window.clone()], new_handles);
 }
 
 fn wait_until<F: FnMut() -> Result<bool, failure::Error>>(

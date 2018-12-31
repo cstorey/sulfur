@@ -22,7 +22,7 @@
   * [x] 9.6 Get Title
 * [ ] 10 Contexts
   * [x] 10.1 Get Window Handle
-  * [ ] 10.2 Close Window
+  * [x] 10.2 Close Window
   * [x] 10.3 Switch To Window
   * [x] 10.4 Get Window Handles
   * [ ] 10.5 Create Window
