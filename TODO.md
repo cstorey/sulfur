@@ -27,8 +27,8 @@
   * [x] 10.4 Get Window Handles
   * [ ] 10.5 Create Window
     * Not supported in most implementations?
-  * [ ] 10.6 Switch To Frame
-  * [ ] 10.7 Switch To Parent Frame
+  * [x] 10.6 Switch To Frame
+  * [x] 10.7 Switch To Parent Frame
   * [ ] 10.8 Resizing and positioning windows
     * [ ] 10.8.1 Get Window Rect
     * [ ] 10.8.2 Set Window Rect
