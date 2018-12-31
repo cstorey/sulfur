@@ -1,7 +1,7 @@
 //! Functionality for starting a dedicated geckodriver and webdriver session for firefox.
 
 use std::process::{Child, Command};
-use std::{thread, time};
+use std::time;
 
 use failure::Error;
 use failure::ResultExt;
@@ -9,7 +9,9 @@ use reqwest;
 
 use client::{Capabilities, Client};
 use driver::{self, DriverHolder};
-use junk_drawer::unused_port_no;
+use junk_drawer::{self, unused_port_no};
+
+const START_TIMEOUT: time::Duration = time::Duration::from_secs(120);
 
 /// Represents a `geckodriver` process.
 pub struct Driver {
@@ -48,13 +50,11 @@ impl Driver {
 
         let mut driver = Driver { child, port, http };
 
-        let mut pause_time = time::Duration::from_millis(1);
-        while !driver.is_healthy() {
+        junk_drawer::wait_until(START_TIMEOUT, || {
             driver.ensure_still_alive()?;
-            debug!("Pausing for {:?}", pause_time);
-            thread::sleep(pause_time);
-            pause_time *= 2;
-        }
+            Ok(driver.is_healthy())
+        })?;
+
         info!("Setup done! running on port {:?}", driver.port);
 
         Ok(driver)

@@ -1,7 +1,8 @@
-use failure::Error;
 use std::net::{SocketAddr, TcpListener};
 use std::sync::atomic::*;
+use std::{thread, time};
 
+use failure::Error;
 use failure::ResultExt;
 
 // We do this shenanigans to (hopefully) avoid a race condition where
@@ -36,4 +37,19 @@ pub fn unused_port_no() -> Result<u16, Error> {
             return Ok(addr.port());
         }
     }
+}
+
+pub(crate) fn wait_until<F: FnMut() -> Result<bool, Error>>(
+    deadline: time::Duration,
+    mut check: F,
+) -> Result<bool, Error> {
+    let mut pause_time = time::Duration::from_millis(1);
+    let started_at = time::Instant::now();
+    while started_at.elapsed() < deadline && !check()? {
+        debug!("Pausing for {:?}", pause_time);
+        thread::sleep(pause_time);
+        pause_time *= 2;
+    }
+
+    Ok(check()?)
 }
