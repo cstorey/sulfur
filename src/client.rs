@@ -242,23 +242,23 @@ impl Client {
         execute(self.client.get(self.url.join(&path)?))
     }
 
-    // §10.4 Get Current Window handles
+    // §10.3 Switch to Window
 
-    /// Lists all window handles.
-    pub fn windows(&self) -> Result<Vec<Window>, Error> {
-        let path = format!("session/{}/window/handles", PathSeg(self.session()?));
-        execute(self.client.get(self.url.join(&path)?))
-    }
-
-    // §10.5 Create Window
-
-    /// Creates a new browser window.
+    /// Switches to the given browser window / tab.
     pub fn switch_to_window(&self, window: &Window) -> Result<(), Error> {
         let path = format!("session/{}/window", PathSeg(self.session()?));
         let body = json!({
             "handle": window,
         });
         execute(self.client.post(self.url.join(&path)?).json(&body))
+    }
+
+    // §10.4 Get Current Window handles
+
+    /// Lists all window handles.
+    pub fn windows(&self) -> Result<Vec<Window>, Error> {
+        let path = format!("session/{}/window/handles", PathSeg(self.session()?));
+        execute(self.client.get(self.url.join(&path)?))
     }
 
     // §11.2.2 Find Element
