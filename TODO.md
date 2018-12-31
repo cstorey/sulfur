@@ -42,7 +42,7 @@
       * [x] 11.2.1.2 Link text
       * [x] 11.2.1.3 Partial link text
       * [x] 11.2.1.4 Tag name
-      * [ ] 11.2.1.5 XPath
+      * [x] 11.2.1.5 XPath
     * [x] 11.2.2 Find Element
     * [x] 11.2.3 Find Elements
     * [x] 11.2.4 Find Element From Element

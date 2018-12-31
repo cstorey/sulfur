@@ -244,6 +244,22 @@ fn find_via_tag_name() {
 }
 
 #[test]
+fn find_via_xpath() {
+    env_logger::try_init().unwrap_or_default();
+
+    let url = SERVER.url();
+    let s = new_session().expect("new_session");
+
+    s.visit(&url).expect("visit");
+    let elt = s
+        .find_element(&By::xpath("//div[@id='with-children']/p[1]"))
+        .expect("find");
+    println!("Elt: {:?}", elt);
+    let text_content = s.text(&elt).expect("read text");
+    assert_eq!(text_content.trim(), "Hello world");
+}
+
+#[test]
 fn find_tag_name() {
     env_logger::try_init().unwrap_or_default();
 

@@ -130,6 +130,14 @@ impl By {
             value: expr.into(),
         }
     }
+    // 11.2.1.5 XPath
+    /// Returns a selector for finding element by XPath
+    pub fn xpath<S: Into<String>>(expr: S) -> Self {
+        By {
+            using: "xpath".into(),
+            value: expr.into(),
+        }
+    }
 }
 
 /// The abstract representation of an element on the current page.
