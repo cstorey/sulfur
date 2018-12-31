@@ -242,6 +242,14 @@ impl Client {
         execute(self.client.get(self.url.join(&path)?))
     }
 
+    // §10.2 Close Window
+
+    /// Closes the _current_ window.
+    pub fn close_window(&self) -> Result<Vec<Window>, Error> {
+        let path = format!("session/{}/window", PathSeg(self.session()?));
+        execute(self.client.delete(self.url.join(&path)?))
+    }
+
     // §10.3 Switch to Window
 
     /// Switches to the given browser window / tab.
