@@ -95,10 +95,20 @@ pub struct By {
 
 // See §11.2.1 Locator strategies
 impl By {
+    // 11.2.1.1 CSS selectors
     /// Returns a selector for finding element by a css expression.
     pub fn css<S: Into<String>>(expr: S) -> Self {
         By {
             using: "css selector".into(),
+            value: expr.into(),
+        }
+    }
+
+    // 11.2.1.2 Link text
+    /// Returns a selector for finding element link text
+    pub fn link_text<S: Into<String>>(expr: S) -> Self {
+        By {
+            using: "link text".into(),
             value: expr.into(),
         }
     }
