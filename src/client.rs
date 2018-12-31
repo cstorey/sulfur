@@ -121,6 +121,15 @@ impl By {
             value: expr.into(),
         }
     }
+
+    // 11.2.1.4 Tag name
+    /// Returns a selector for finding element by tag name
+    pub fn tag_name<S: Into<String>>(expr: S) -> Self {
+        By {
+            using: "tag name".into(),
+            value: expr.into(),
+        }
+    }
 }
 
 /// The abstract representation of an element on the current page.
