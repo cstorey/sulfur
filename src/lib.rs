@@ -17,6 +17,7 @@ extern crate failure_derive;
 extern crate url;
 #[macro_use]
 extern crate log;
+extern crate rand;
 
 mod junk_drawer;
 
