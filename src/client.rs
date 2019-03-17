@@ -93,7 +93,7 @@ pub struct By {
     value: String,
 }
 
-// See §11.2.1 Locator strategies
+// See §12.2.1 Locator strategies
 impl By {
     // 11.2.1.1 CSS selectors
     /// Returns a selector for finding element by a css expression.
@@ -323,7 +323,7 @@ impl Client {
         execute(self.client.post(self.url.join(&path)?).json(&json!({})))
     }
 
-    // §11.2.2 Find Element
+    // §12.2.2 Find Element
 
     /// Attempts to lookup a single element by the given selector. Fails if
     /// Either no elements are found, or more than one is found.
@@ -335,7 +335,7 @@ impl Client {
         Ok(result)
     }
 
-    // §11.2.3 Find Elements
+    // §12.2.3 Find Elements
 
     /// Attempts to lookup multiple elements by the given selector. May
     /// return zero or more.
@@ -347,7 +347,7 @@ impl Client {
         Ok(result)
     }
 
-    // §11.2.4 Find Element From Element
+    // §12.2.4 Find Element From Element
 
     /// Find a single element relative to start element `elt` with the selector.
     /// Fails if zero or more than one are found.
@@ -363,7 +363,7 @@ impl Client {
         Ok(result)
     }
 
-    // §11.2.5 Find Elements From Element
+    // §12.2.5 Find Elements From Element
 
     /// Attempts to lookup multiple elements relative to the start element
     /// `elt` by the given selector. May return zero or more.
@@ -379,7 +379,7 @@ impl Client {
         Ok(result)
     }
 
-    // §11.3.5 Get Element Text
+    // §12.3.5 Get Element Text
 
     /// Get the contained text content from the given element, including
     /// that from child elementes.
@@ -395,7 +395,7 @@ impl Client {
         Ok(result)
     }
 
-    // §11.3.6 Get Element Tag Name
+    // §12.3.6 Get Element Tag Name
 
     /// Fetch the tag name of the given element.
     pub fn name(&self, elt: &Element) -> Result<String, Error> {
@@ -410,7 +410,7 @@ impl Client {
         Ok(result)
     }
 
-    // §11.4.1 Element Click
+    // §12.4.1 Element Click
 
     /// Simulates clicking on the specified element.
     pub fn click(&self, elt: &Element) -> Result<(), Error> {
@@ -424,7 +424,7 @@ impl Client {
         Ok(())
     }
 
-    // §11.4.3 Element Send Keys
+    // §12.4.3 Element Send Keys
 
     /// Simulates typing into the given element, such as a text input.
     pub fn send_keys(&self, elt: &Element, keys: &'static str) -> Result<(), Error> {
@@ -440,7 +440,7 @@ impl Client {
 
         Ok(())
     }
-    // §11.4.2 Element Clear
+    // §12.4.2 Element Clear
 
     /// Clears the given element, such as an input field.
     pub fn clear(&self, elt: &Element) -> Result<(), Error> {
