@@ -274,6 +274,27 @@ fn find_tag_name() {
 }
 
 #[test]
+fn find_attribute_value() {
+    env_logger::try_init().unwrap_or_default();
+
+    let url = SERVER.url();
+    let s = new_session().expect("new_session");
+
+    s.visit(&url).expect("visit");
+    let elt = s
+        .find_element(&By::css("#find-attribute-value"))
+        .expect("find #find-attribute-value");
+    println!("Elt: {:?}", elt);
+    let value = s
+        .attribute(&elt, "data-my-id")
+        .expect("read attribute value");
+    assert_eq!(value, Some("my-id-value".to_string()));
+
+    let value2 = s.attribute(&elt, "missing").expect("read missing value");
+    assert_eq!(value2, None);
+}
+
+#[test]
 fn find_multiple_elements() {
     env_logger::try_init().unwrap_or_default();
 

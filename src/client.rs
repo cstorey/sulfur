@@ -395,6 +395,22 @@ impl Client {
         Ok(result)
     }
 
+    // §12.3.2 Get Element Attribute
+
+    /// Fetch the attribute value name of the given element.
+    pub fn attribute(&self, elt: &Element, attribute: &str) -> Result<Option<String>, Error> {
+        let path = format!(
+            "session/{}/element/{}/attribute/{}",
+            PathSeg(self.session()?),
+            PathSeg(elt.id()),
+            PathSeg(attribute),
+        );
+        let req = self.client.get(self.url.join(&path)?);
+        let result = execute(req)?;
+
+        Ok(result)
+    }
+
     // §12.3.6 Get Element Tag Name
 
     /// Fetch the tag name of the given element.
