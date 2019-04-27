@@ -1,5 +1,6 @@
 //! Functionality for starting a dedicated chromedriver and webdriver session for Chrome.
 
+use std::fmt;
 use std::process::{Child, Command};
 use std::time;
 
@@ -20,6 +21,28 @@ pub struct Driver {
     http: reqwest::Client,
 }
 
+/// Represents the log level passed to chromedriver.
+#[derive(Clone, Debug)]
+pub enum LogLevel {
+    /// OFF
+    Off,
+    /// SEVERE
+    Severe,
+    /// WARNING
+    Warning,
+    /// INFO
+    Info,
+    /// DEBUG
+    Debug,
+    /// ALL
+    All,
+}
+
+/// Allows extra configuration for chrome driver instances..
+#[derive(Clone, Default, Debug)]
+pub struct DriverConfig {
+    log_level: LogLevel,
+}
 /// Allows extra configuration for chrome instances.
 #[derive(Clone, Default)]
 pub struct Config {
@@ -39,13 +62,17 @@ pub fn start(config: &Config) -> Result<DriverHolder, Error> {
 impl Driver {
     /// Start a chromedriver instance on an automatically assigned port.
     pub fn start() -> Result<Self, Error> {
+        Self::driver_config(&DriverConfig::default())
+    }
+
+    /// Start chromedriver with the given configuration.
+    pub fn driver_config(config: &DriverConfig) -> Result<Self, Error> {
         let http = reqwest::Client::new();
         let port = unused_port_no()?;
         debug!("Spawning chrome driver on port: {:?}", port);
         let mut cmd = Command::new("chromedriver");
         cmd.arg(format!("--port={}", port));
-        // cmd.arg("--silent");
-        // cmd.arg("--verbose");
+        cmd.arg(format!("--log-level={}", config.log_level));
         debug!("Starting command: {:?}", cmd);
         let child = cmd.spawn().context("Spawning chrome")?;
 
@@ -145,6 +172,25 @@ impl Config {
                    "args": args,
                }
             }),
+        }
+    }
+}
+
+impl Default for LogLevel {
+    fn default() -> Self {
+        LogLevel::Off
+    }
+}
+
+impl fmt::Display for LogLevel {
+    fn fmt(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
+        match self {
+            &LogLevel::Off => write!(fmt, "OFF"),
+            &LogLevel::Severe => write!(fmt, "SEVERE"),
+            &LogLevel::Warning => write!(fmt, "WARNING"),
+            &LogLevel::Info => write!(fmt, "INFO"),
+            &LogLevel::Debug => write!(fmt, "DEBUG"),
+            &LogLevel::All => write!(fmt, "ALL"),
         }
     }
 }
