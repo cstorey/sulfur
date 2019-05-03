@@ -40,7 +40,9 @@ jobs:
       - *RESTORE_DEPS
       - run: cargo build --tests
       - *SAVE_DEPS
+      - run: chromedriver --version
       - run: env DRIVER=chromedriver cargo test
+      - run: geckodriver --version
       - run: env DRIVER=geckodriver cargo test
 workflows:
   testall:
