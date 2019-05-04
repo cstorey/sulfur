@@ -103,6 +103,7 @@ impl Driver {
     /// Forcibly terminate the chromedriver instance. This assumes that the
     /// webdriver client session has been shut down seperately.
     pub fn close(&mut self) -> Result<(), Error> {
+        debug!("Closing child: {:?}", self.child);
         self.child.kill()?;
         self.child.wait()?;
         Ok(())
@@ -140,14 +141,17 @@ impl Driver {
 
 impl Drop for Driver {
     fn drop(&mut self) {
-        debug!("Dropping child");
-        let _ = self.child.kill();
+        match self.close() {
+            Ok(()) => (),
+            Err(e) => error!("Dropping child: {:?}", e),
+        }
     }
 }
 
 impl driver::Driver for Driver {
     fn close(&mut self) -> Result<(), Error> {
         self.child.kill()?;
+        self.child.wait()?;
         Ok(())
     }
 }
