@@ -1,3 +1,4 @@
+use std::borrow::Cow;
 use std::fmt;
 
 use failure::Error;
@@ -190,13 +191,26 @@ impl Client {
         })
     }
 
+    fn url_of_segments(&self, elts: &[&str]) -> Result<reqwest::Url, reqwest::UrlError> {
+        let mut path = String::new();
+        for (i, seg) in elts.iter().enumerate() {
+            let enc: Cow<'_, str> = utf8_percent_encode(seg, PATH_SEGMENT_ENCODE_SET).into();
+            if i > 0 {
+                path.push('/')
+            }
+            path.push_str(&enc);
+        }
+
+        return self.url.join(&path);
+    }
+
     // §8.2 Delete session
 
     /// Terminates the session, possibly closing the browser window.§
     pub fn close(&mut self) -> Result<(), Error> {
         if let Some(session_id) = self.session_id.as_ref() {
-            let path = format!("session/{}", PathSeg(&session_id));
-            execute(self.client.delete(self.url.join(&path)?))?;
+            let url = self.url_of_segments(&[&"session", &**session_id])?;
+            execute(self.client.delete(url))?;
         }
         self.session_id = None;
         Ok(())
