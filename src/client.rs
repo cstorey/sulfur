@@ -1,3 +1,4 @@
+use std::borrow::Cow;
 use std::fmt;
 
 use failure::Error;
@@ -158,8 +159,6 @@ impl Element {
     }
 }
 
-struct PathSeg<'a>(&'a str);
-
 impl Client {
     /// Creates a new webdriver session with the specified capabilities.
     pub fn new<U: reqwest::IntoUrl>(url: U, capabilities: Capabilities) -> Result<Self, Error> {
@@ -190,13 +189,26 @@ impl Client {
         })
     }
 
+    fn url_of_segments(&self, elts: &[&str]) -> Result<reqwest::Url, reqwest::UrlError> {
+        let mut path = String::new();
+        for (i, seg) in elts.iter().enumerate() {
+            let enc: Cow<'_, str> = utf8_percent_encode(seg, PATH_SEGMENT_ENCODE_SET).into();
+            if i > 0 {
+                path.push('/')
+            }
+            path.push_str(&enc);
+        }
+
+        return self.url.join(&path);
+    }
+
     // §8.2 Delete session
 
     /// Terminates the session, possibly closing the browser window.§
     pub fn close(&mut self) -> Result<(), Error> {
         if let Some(session_id) = self.session_id.as_ref() {
-            let path = format!("session/{}", PathSeg(&session_id));
-            execute(self.client.delete(self.url.join(&path)?))?;
+            let url = self.url_of_segments(&[&"session", &**session_id])?;
+            execute(self.client.delete(url))?;
         }
         self.session_id = None;
         Ok(())
@@ -206,30 +218,24 @@ impl Client {
 
     /// Read the current set of timeouts.
     pub fn timeouts(&self) -> Result<Timeouts, Error> {
-        let path = format!("session/{}/timeouts", PathSeg(self.session()?));
-        Ok(execute(self.client.get(self.url.join(&path)?))?)
+        let url = self.url_of_segments(&[&"session", self.session()?, &"timeouts"])?;
+        Ok(execute(self.client.get(url))?)
     }
 
     // §8.5 Set Timeouts
 
     /// Change the current set of timeouts.
     pub fn set_timeouts(&self, timeouts: &Timeouts) -> Result<(), Error> {
-        let path = format!("session/{}/timeouts", PathSeg(self.session()?));
-        Ok(execute(
-            self.client.post(self.url.join(&path)?).json(timeouts),
-        )?)
+        let url = self.url_of_segments(&[&"session", self.session()?, &"timeouts"])?;
+        Ok(execute(self.client.post(url).json(timeouts))?)
     }
 
     // §9.1 Navigate To
 
     /// Tells the browser to open the given URL.
-    pub fn visit(&self, url: &str) -> Result<(), Error> {
-        let path = format!("session/{}/url", PathSeg(self.session()?));
-        execute(
-            self.client
-                .post(self.url.join(&path)?)
-                .json(&json!({ "url": url })),
-        )
+    pub fn visit(&self, visit_url: &str) -> Result<(), Error> {
+        let url = self.url_of_segments(&[&"session", self.session()?, &"url"])?;
+        execute(self.client.post(url).json(&json!({ "url": visit_url })))
     }
 
     // §9.3 Back
@@ -237,8 +243,8 @@ impl Client {
     /// Navigates to the previous page in the browser's history, just like
     /// pressing the back button.
     pub fn back(&self) -> Result<(), Error> {
-        let path = format!("session/{}/back", PathSeg(self.session()?));
-        execute(self.client.post(self.url.join(&path)?).json(&json!({})))
+        let url = self.url_of_segments(&[&"session", self.session()?, &"back"])?;
+        execute(self.client.post(url).json(&json!({})))
     }
 
     // §9.4 Forward
@@ -246,8 +252,8 @@ impl Client {
     /// Navigates to the next page in the browser's history, just like
     /// pressing the back button.
     pub fn forward(&self) -> Result<(), Error> {
-        let path = format!("session/{}/forward", PathSeg(self.session()?));
-        execute(self.client.post(self.url.join(&path)?).json(&json!({})))
+        let url = self.url_of_segments(&[&"session", self.session()?, &"forward"])?;
+        execute(self.client.post(url).json(&json!({})))
     }
 
     // §9.5 Refresh
@@ -255,77 +261,73 @@ impl Client {
     /// Reloads the current page from the server, just like
     /// pressing the "refresh" button.
     pub fn refresh(&self) -> Result<(), Error> {
-        let path = format!("session/{}/refresh", PathSeg(self.session()?));
-        execute(self.client.post(self.url.join(&path)?).json(&json!({})))
+        let url = self.url_of_segments(&[&"session", self.session()?, &"refresh"])?;
+        execute(self.client.post(url).json(&json!({})))
     }
 
     // §9.6 Get Title
 
     /// Fetches the current page's title as a string.
     pub fn title(&self) -> Result<String, Error> {
-        let path = format!("session/{}/title", PathSeg(self.session()?));
-        execute(self.client.get(self.url.join(&path)?))
+        let url = self.url_of_segments(&[&"session", self.session()?, &"title"])?;
+        execute(self.client.get(url))
     }
 
     // §9.2 Get Current URL
 
     /// Fetches the browser's current URL, as would be shown in the URL bar.
     pub fn current_url(&self) -> Result<String, Error> {
-        let path = format!("session/{}/url", PathSeg(self.session()?));
-        execute(self.client.get(self.url.join(&path)?))
+        let url = self.url_of_segments(&[&"session", self.session()?, &"url"])?;
+        execute(self.client.get(url))
     }
 
     // §10.1 Get Current Window handle
 
     /// Fetches the active window handle
     pub fn window(&self) -> Result<Window, Error> {
-        let path = format!("session/{}/window", PathSeg(self.session()?));
-        execute(self.client.get(self.url.join(&path)?))
+        let url = self.url_of_segments(&[&"session", self.session()?, &"window"])?;
+        execute(self.client.get(url))
     }
 
     // §10.2 Close Window
 
     /// Closes the _current_ window.
     pub fn close_window(&self) -> Result<Vec<Window>, Error> {
-        let path = format!("session/{}/window", PathSeg(self.session()?));
-        execute(self.client.delete(self.url.join(&path)?))
+        let url = self.url_of_segments(&[&"session", self.session()?, &"window"])?;
+        execute(self.client.delete(url))
     }
 
     // §10.3 Switch to Window
 
     /// Switches to the given browser window / tab.
     pub fn switch_to_window(&self, window: &Window) -> Result<(), Error> {
-        let path = format!("session/{}/window", PathSeg(self.session()?));
+        let url = self.url_of_segments(&[&"session", self.session()?, &"window"])?;
         let body = json!({
             "handle": window,
         });
-        execute(self.client.post(self.url.join(&path)?).json(&body))
+        execute(self.client.post(url).json(&body))
     }
 
     // §10.4 Get Current Window handles
 
     /// Lists all window handles.
     pub fn windows(&self) -> Result<Vec<Window>, Error> {
-        let path = format!("session/{}/window/handles", PathSeg(self.session()?));
-        execute(self.client.get(self.url.join(&path)?))
+        let url = self.url_of_segments(&[&"session", self.session()?, &"window", &"handles"])?;
+        execute(self.client.get(url))
     }
 
     // §10.5 Switch to frame
 
     /// Switch to the frame by element reference
     pub fn switch_to_frame(&self, frame: Option<&Element>) -> Result<(), Error> {
-        let path = format!("session/{}/frame", PathSeg(self.session()?));
-        execute(
-            self.client
-                .post(self.url.join(&path)?)
-                .json(&json!({ "id": frame })),
-        )
+        let url = self.url_of_segments(&[&"session", self.session()?, &"frame"])?;
+        execute(self.client.post(url).json(&json!({ "id": frame })))
     }
 
     /// Switch to the parent frame
     pub fn switch_to_parent_frame(&self) -> Result<(), Error> {
-        let path = format!("session/{}/frame/parent", PathSeg(self.session()?));
-        execute(self.client.post(self.url.join(&path)?).json(&json!({})))
+        let url = self.url_of_segments(&[&"session", self.session()?, &"frame", &"parent"])?;
+        execute(self.client.post(url).json(&json!({})))
     }
 
     // §12.2.2 Find Element
@@ -333,8 +335,8 @@ impl Client {
     /// Attempts to lookup a single element by the given selector. Fails if
     /// Either no elements are found, or more than one is found.
     pub fn find_element(&self, by: &By) -> Result<Element, Error> {
-        let path = format!("session/{}/element", PathSeg(self.session()?));
-        let req = self.client.post(self.url.join(&path)?).json(&by);
+        let url = self.url_of_segments(&[&"session", self.session()?, &"element"])?;
+        let req = self.client.post(url).json(&by);
         let result = execute(req)?;
 
         Ok(result)
@@ -345,8 +347,8 @@ impl Client {
     /// Attempts to lookup multiple elements by the given selector. May
     /// return zero or more.
     pub fn find_elements(&self, by: &By) -> Result<Vec<Element>, Error> {
-        let path = format!("session/{}/elements", PathSeg(self.session()?));
-        let req = self.client.post(self.url.join(&path)?).json(by);
+        let url = self.url_of_segments(&[&"session", self.session()?, &"elements"])?;
+        let req = self.client.post(url).json(&by);
         let result = execute(req)?;
 
         Ok(result)
@@ -357,12 +359,9 @@ impl Client {
     /// Find a single element relative to start element `elt` with the selector.
     /// Fails if zero or more than one are found.
     pub fn find_element_from(&self, elt: &Element, by: &By) -> Result<Element, Error> {
-        let path = format!(
-            "session/{}/element/{}/element",
-            PathSeg(self.session()?),
-            PathSeg(elt.id())
-        );
-        let req = self.client.post(self.url.join(&path)?).json(by);
+        let url =
+            self.url_of_segments(&[&"session", self.session()?, &"element", elt.id(), "element"])?;
+        let req = self.client.post(url).json(by);
         let result = execute(req)?;
 
         Ok(result)
@@ -373,12 +372,14 @@ impl Client {
     /// Attempts to lookup multiple elements relative to the start element
     /// `elt` by the given selector. May return zero or more.
     pub fn find_elements_from(&self, elt: &Element, by: &By) -> Result<Vec<Element>, Error> {
-        let path = format!(
-            "session/{}/element/{}/elements",
-            PathSeg(self.session()?),
-            PathSeg(elt.id())
-        );
-        let req = self.client.post(self.url.join(&path)?).json(by);
+        let url = self.url_of_segments(&[
+            &"session",
+            self.session()?,
+            &"element",
+            elt.id(),
+            "elements",
+        ])?;
+        let req = self.client.post(url).json(by);
         let result = execute(req)?;
 
         Ok(result)
@@ -389,12 +390,9 @@ impl Client {
     /// Get the contained text content from the given element, including
     /// that from child elementes.
     pub fn text(&self, elt: &Element) -> Result<String, Error> {
-        let path = format!(
-            "session/{}/element/{}/text",
-            PathSeg(self.session()?),
-            PathSeg(elt.id())
-        );
-        let req = self.client.get(self.url.join(&path)?);
+        let url =
+            self.url_of_segments(&[&"session", self.session()?, &"element", elt.id(), "text"])?;
+        let req = self.client.get(url);
         let result = execute(req)?;
 
         Ok(result)
@@ -404,13 +402,15 @@ impl Client {
 
     /// Fetch the attribute value name of the given element.
     pub fn attribute(&self, elt: &Element, attribute: &str) -> Result<Option<String>, Error> {
-        let path = format!(
-            "session/{}/element/{}/attribute/{}",
-            PathSeg(self.session()?),
-            PathSeg(elt.id()),
-            PathSeg(attribute),
-        );
-        let req = self.client.get(self.url.join(&path)?);
+        let url = self.url_of_segments(&[
+            &"session",
+            self.session()?,
+            &"element",
+            elt.id(),
+            "attribute",
+            attribute,
+        ])?;
+        let req = self.client.get(url);
         let result = execute(req)?;
 
         Ok(result)
@@ -420,12 +420,9 @@ impl Client {
 
     /// Fetch the tag name of the given element.
     pub fn name(&self, elt: &Element) -> Result<String, Error> {
-        let path = format!(
-            "session/{}/element/{}/name",
-            PathSeg(self.session()?),
-            PathSeg(elt.id())
-        );
-        let req = self.client.get(self.url.join(&path)?);
+        let url =
+            self.url_of_segments(&[&"session", self.session()?, &"element", elt.id(), "name"])?;
+        let req = self.client.get(url);
         let result = execute(req)?;
 
         Ok(result)
@@ -435,12 +432,11 @@ impl Client {
 
     /// Simulates clicking on the specified element.
     pub fn click(&self, elt: &Element) -> Result<(), Error> {
-        let path = format!(
-            "session/{}/element/{}/click",
-            PathSeg(self.session()?),
-            PathSeg(elt.id())
-        );
-        execute(self.client.post(self.url.join(&path)?).json(&json!({})))?;
+        let url =
+            self.url_of_segments(&[&"session", self.session()?, &"element", elt.id(), "click"])?;
+        let req = self.client.post(url).json(&json!({}));
+
+        execute(req)?;
 
         Ok(())
     }
@@ -449,15 +445,14 @@ impl Client {
 
     /// Simulates typing into the given element, such as a text input.
     pub fn send_keys(&self, elt: &Element, keys: &'static str) -> Result<(), Error> {
-        let url = self.url.join(&format!(
-            "session/{}/element/{}/value",
-            PathSeg(self.session()?),
-            PathSeg(elt.id())
-        ))?;
-        execute(self.client.post(url).json(&json!({
+        let url =
+            self.url_of_segments(&[&"session", self.session()?, &"element", elt.id(), "value"])?;
+        let req = self.client.post(url).json(&json!({
             "text": keys,
             "value": [keys],
-        })))?;
+        }));
+
+        execute(req)?;
 
         Ok(())
     }
@@ -465,15 +460,15 @@ impl Client {
 
     /// Clears the given element, such as an input field.
     pub fn clear(&self, elt: &Element) -> Result<(), Error> {
-        let url = self.url.join(&format!(
-            "session/{}/element/{}/clear",
-            PathSeg(self.session()?),
-            PathSeg(elt.id())
-        ))?;
-        execute(self.client.post(url).json(&json!({})))?;
+        let url =
+            self.url_of_segments(&[&"session", self.session()?, &"element", elt.id(), "clear"])?;
+        let req = self.client.post(url).json(&json!({}));
+
+        execute(req)?;
 
         Ok(())
     }
+
     fn session(&self) -> Result<&str, Error> {
         return self
             .session_id
@@ -488,17 +483,6 @@ impl Drop for Client {
         if let Err(e) = self.close() {
             warn!("Closing webdriver client: {:?}", e);
         }
-    }
-}
-
-impl<'a> fmt::Display for PathSeg<'a> {
-    fn fmt(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
-        let &PathSeg(ref val) = self;
-        write!(
-            fmt,
-            "{}",
-            utf8_percent_encode(&val, PATH_SEGMENT_ENCODE_SET)
-        )
     }
 }
 
