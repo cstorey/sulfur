@@ -1,6 +1,11 @@
-use failure::Error;
-use percent_encoding::{utf8_percent_encode, PATH_SEGMENT_ENCODE_SET};
 use std::fmt;
+
+use failure::Error;
+use percent_encoding::{utf8_percent_encode, AsciiSet, CONTROLS};
+
+const QUERY_ENCODE_SET: &AsciiSet = &CONTROLS.add(b' ').add(b'"').add(b'<').add(b'>').add(b'`');
+const DEFAULT_ENCODE_SET: &AsciiSet = &QUERY_ENCODE_SET.add(b'`').add(b'?').add(b'{').add(b'}');
+const PATH_SEGMENT_ENCODE_SET: &AsciiSet = &DEFAULT_ENCODE_SET.add(b'%').add(b'/');
 
 /// The representation of a webdriver session.
 #[derive(Debug, Clone)]
