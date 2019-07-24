@@ -359,13 +359,8 @@ impl Client {
     /// Find a single element relative to start element `elt` with the selector.
     /// Fails if zero or more than one are found.
     pub fn find_element_from(&self, elt: &Element, by: &By) -> Result<Element, Error> {
-        let url = self.url_of_segments(&[
-            &"session",
-            self.session()?,
-            &"element",
-            &elt.id(),
-            "element",
-        ])?;
+        let url =
+            self.url_of_segments(&[&"session", self.session()?, &"element", elt.id(), "element"])?;
         let req = self.client.post(url).json(by);
         let result = execute(req)?;
 
@@ -381,7 +376,7 @@ impl Client {
             &"session",
             self.session()?,
             &"element",
-            &elt.id(),
+            elt.id(),
             "elements",
         ])?;
         let req = self.client.post(url).json(by);
@@ -396,7 +391,7 @@ impl Client {
     /// that from child elementes.
     pub fn text(&self, elt: &Element) -> Result<String, Error> {
         let url =
-            self.url_of_segments(&[&"session", self.session()?, &"element", &elt.id(), "text"])?;
+            self.url_of_segments(&[&"session", self.session()?, &"element", elt.id(), "text"])?;
         let req = self.client.get(url);
         let result = execute(req)?;
 
@@ -411,7 +406,7 @@ impl Client {
             &"session",
             self.session()?,
             &"element",
-            &elt.id(),
+            elt.id(),
             "attribute",
             attribute,
         ])?;
@@ -426,7 +421,7 @@ impl Client {
     /// Fetch the tag name of the given element.
     pub fn name(&self, elt: &Element) -> Result<String, Error> {
         let url =
-            self.url_of_segments(&[&"session", self.session()?, &"element", &elt.id(), "name"])?;
+            self.url_of_segments(&[&"session", self.session()?, &"element", elt.id(), "name"])?;
         let req = self.client.get(url);
         let result = execute(req)?;
 
@@ -438,7 +433,7 @@ impl Client {
     /// Simulates clicking on the specified element.
     pub fn click(&self, elt: &Element) -> Result<(), Error> {
         let url =
-            self.url_of_segments(&[&"session", self.session()?, &"element", &elt.id(), "click"])?;
+            self.url_of_segments(&[&"session", self.session()?, &"element", elt.id(), "click"])?;
         let req = self.client.post(url).json(&json!({}));
 
         execute(req)?;
@@ -451,7 +446,7 @@ impl Client {
     /// Simulates typing into the given element, such as a text input.
     pub fn send_keys(&self, elt: &Element, keys: &'static str) -> Result<(), Error> {
         let url =
-            self.url_of_segments(&[&"session", self.session()?, &"element", &elt.id(), "value"])?;
+            self.url_of_segments(&[&"session", self.session()?, &"element", elt.id(), "value"])?;
         let req = self.client.post(url).json(&json!({
             "text": keys,
             "value": [keys],
@@ -466,7 +461,7 @@ impl Client {
     /// Clears the given element, such as an input field.
     pub fn clear(&self, elt: &Element) -> Result<(), Error> {
         let url =
-            self.url_of_segments(&[&"session", self.session()?, &"element", &elt.id(), "clear"])?;
+            self.url_of_segments(&[&"session", self.session()?, &"element", elt.id(), "clear"])?;
         let req = self.client.post(url).json(&json!({}));
 
         execute(req)?;
