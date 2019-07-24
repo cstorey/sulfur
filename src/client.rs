@@ -159,8 +159,6 @@ impl Element {
     }
 }
 
-struct PathSeg<'a>(&'a str);
-
 impl Client {
     /// Creates a new webdriver session with the specified capabilities.
     pub fn new<U: reqwest::IntoUrl>(url: U, capabilities: Capabilities) -> Result<Self, Error> {
@@ -490,17 +488,6 @@ impl Drop for Client {
         if let Err(e) = self.close() {
             warn!("Closing webdriver client: {:?}", e);
         }
-    }
-}
-
-impl<'a> fmt::Display for PathSeg<'a> {
-    fn fmt(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
-        let &PathSeg(ref val) = self;
-        write!(
-            fmt,
-            "{}",
-            utf8_percent_encode(&val, PATH_SEGMENT_ENCODE_SET)
-        )
     }
 }
 
