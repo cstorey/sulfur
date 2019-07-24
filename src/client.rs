@@ -1,6 +1,6 @@
 use failure::Error;
+use percent_encoding::{utf8_percent_encode, PATH_SEGMENT_ENCODE_SET};
 use std::fmt;
-use url::percent_encoding::{utf8_percent_encode, PATH_SEGMENT_ENCODE_SET};
 
 /// The representation of a webdriver session.
 #[derive(Debug, Clone)]
