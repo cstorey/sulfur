@@ -220,18 +220,16 @@ impl Client {
 
     /// Read the current set of timeouts.
     pub fn timeouts(&self) -> Result<Timeouts, Error> {
-        let path = format!("session/{}/timeouts", PathSeg(self.session()?));
-        Ok(execute(self.client.get(self.url.join(&path)?))?)
+        let url = self.url_of_segments(&[&"session", self.session()?, &"timeouts"])?;
+        Ok(execute(self.client.get(url))?)
     }
 
     // §8.5 Set Timeouts
 
     /// Change the current set of timeouts.
     pub fn set_timeouts(&self, timeouts: &Timeouts) -> Result<(), Error> {
-        let path = format!("session/{}/timeouts", PathSeg(self.session()?));
-        Ok(execute(
-            self.client.post(self.url.join(&path)?).json(timeouts),
-        )?)
+        let url = self.url_of_segments(&[&"session", self.session()?, &"timeouts"])?;
+        Ok(execute(self.client.post(url).json(timeouts))?)
     }
 
     // §9.1 Navigate To
