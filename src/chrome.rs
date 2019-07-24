@@ -104,8 +104,15 @@ impl Driver {
     /// webdriver client session has been shut down seperately.
     pub fn close(&mut self) -> Result<(), Error> {
         debug!("Closing child: {:?}", self.child);
-        self.child.kill()?;
-        self.child.wait()?;
+        match self.child.try_wait()? {
+            Some(status) => info!("Child already exited with status: {}", status),
+            None => {
+                self.child.kill()?;
+                // Err(e) if e.kind() == std::io::ErrorKind::InvalidInput => {}
+                self.child.wait()?;
+                debug!("Child killed: {:?}", self.child);
+            }
+        }
         Ok(())
     }
 
