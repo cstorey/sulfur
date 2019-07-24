@@ -287,53 +287,49 @@ impl Client {
 
     /// Fetches the active window handle
     pub fn window(&self) -> Result<Window, Error> {
-        let path = format!("session/{}/window", PathSeg(self.session()?));
-        execute(self.client.get(self.url.join(&path)?))
+        let url = self.url_of_segments(&[&"session", self.session()?, &"window"])?;
+        execute(self.client.get(url))
     }
 
     // §10.2 Close Window
 
     /// Closes the _current_ window.
     pub fn close_window(&self) -> Result<Vec<Window>, Error> {
-        let path = format!("session/{}/window", PathSeg(self.session()?));
-        execute(self.client.delete(self.url.join(&path)?))
+        let url = self.url_of_segments(&[&"session", self.session()?, &"window"])?;
+        execute(self.client.delete(url))
     }
 
     // §10.3 Switch to Window
 
     /// Switches to the given browser window / tab.
     pub fn switch_to_window(&self, window: &Window) -> Result<(), Error> {
-        let path = format!("session/{}/window", PathSeg(self.session()?));
+        let url = self.url_of_segments(&[&"session", self.session()?, &"window"])?;
         let body = json!({
             "handle": window,
         });
-        execute(self.client.post(self.url.join(&path)?).json(&body))
+        execute(self.client.post(url).json(&body))
     }
 
     // §10.4 Get Current Window handles
 
     /// Lists all window handles.
     pub fn windows(&self) -> Result<Vec<Window>, Error> {
-        let path = format!("session/{}/window/handles", PathSeg(self.session()?));
-        execute(self.client.get(self.url.join(&path)?))
+        let url = self.url_of_segments(&[&"session", self.session()?, &"window", &"handles"])?;
+        execute(self.client.get(url))
     }
 
     // §10.5 Switch to frame
 
     /// Switch to the frame by element reference
     pub fn switch_to_frame(&self, frame: Option<&Element>) -> Result<(), Error> {
-        let path = format!("session/{}/frame", PathSeg(self.session()?));
-        execute(
-            self.client
-                .post(self.url.join(&path)?)
-                .json(&json!({ "id": frame })),
-        )
+        let url = self.url_of_segments(&[&"session", self.session()?, &"frame"])?;
+        execute(self.client.post(url).json(&json!({ "id": frame })))
     }
 
     /// Switch to the parent frame
     pub fn switch_to_parent_frame(&self) -> Result<(), Error> {
-        let path = format!("session/{}/frame/parent", PathSeg(self.session()?));
-        execute(self.client.post(self.url.join(&path)?).json(&json!({})))
+        let url = self.url_of_segments(&[&"session", self.session()?, &"frame", &"parent"])?;
+        execute(self.client.post(url).json(&json!({})))
     }
 
     // §12.2.2 Find Element
