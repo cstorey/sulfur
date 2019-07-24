@@ -337,8 +337,8 @@ impl Client {
     /// Attempts to lookup a single element by the given selector. Fails if
     /// Either no elements are found, or more than one is found.
     pub fn find_element(&self, by: &By) -> Result<Element, Error> {
-        let path = format!("session/{}/element", PathSeg(self.session()?));
-        let req = self.client.post(self.url.join(&path)?).json(&by);
+        let url = self.url_of_segments(&[&"session", self.session()?, &"element"])?;
+        let req = self.client.post(url).json(&by);
         let result = execute(req)?;
 
         Ok(result)
@@ -349,8 +349,8 @@ impl Client {
     /// Attempts to lookup multiple elements by the given selector. May
     /// return zero or more.
     pub fn find_elements(&self, by: &By) -> Result<Vec<Element>, Error> {
-        let path = format!("session/{}/elements", PathSeg(self.session()?));
-        let req = self.client.post(self.url.join(&path)?).json(by);
+        let url = self.url_of_segments(&[&"session", self.session()?, &"elements"])?;
+        let req = self.client.post(url).json(&by);
         let result = execute(req)?;
 
         Ok(result)
@@ -361,12 +361,14 @@ impl Client {
     /// Find a single element relative to start element `elt` with the selector.
     /// Fails if zero or more than one are found.
     pub fn find_element_from(&self, elt: &Element, by: &By) -> Result<Element, Error> {
-        let path = format!(
-            "session/{}/element/{}/element",
-            PathSeg(self.session()?),
-            PathSeg(elt.id())
-        );
-        let req = self.client.post(self.url.join(&path)?).json(by);
+        let url = self.url_of_segments(&[
+            &"session",
+            self.session()?,
+            &"element",
+            &elt.id(),
+            "element",
+        ])?;
+        let req = self.client.post(url).json(by);
         let result = execute(req)?;
 
         Ok(result)
@@ -377,12 +379,14 @@ impl Client {
     /// Attempts to lookup multiple elements relative to the start element
     /// `elt` by the given selector. May return zero or more.
     pub fn find_elements_from(&self, elt: &Element, by: &By) -> Result<Vec<Element>, Error> {
-        let path = format!(
-            "session/{}/element/{}/elements",
-            PathSeg(self.session()?),
-            PathSeg(elt.id())
-        );
-        let req = self.client.post(self.url.join(&path)?).json(by);
+        let url = self.url_of_segments(&[
+            &"session",
+            self.session()?,
+            &"element",
+            &elt.id(),
+            "elements",
+        ])?;
+        let req = self.client.post(url).json(by);
         let result = execute(req)?;
 
         Ok(result)
@@ -393,12 +397,9 @@ impl Client {
     /// Get the contained text content from the given element, including
     /// that from child elementes.
     pub fn text(&self, elt: &Element) -> Result<String, Error> {
-        let path = format!(
-            "session/{}/element/{}/text",
-            PathSeg(self.session()?),
-            PathSeg(elt.id())
-        );
-        let req = self.client.get(self.url.join(&path)?);
+        let url =
+            self.url_of_segments(&[&"session", self.session()?, &"element", &elt.id(), "text"])?;
+        let req = self.client.get(url);
         let result = execute(req)?;
 
         Ok(result)
@@ -408,13 +409,15 @@ impl Client {
 
     /// Fetch the attribute value name of the given element.
     pub fn attribute(&self, elt: &Element, attribute: &str) -> Result<Option<String>, Error> {
-        let path = format!(
-            "session/{}/element/{}/attribute/{}",
-            PathSeg(self.session()?),
-            PathSeg(elt.id()),
-            PathSeg(attribute),
-        );
-        let req = self.client.get(self.url.join(&path)?);
+        let url = self.url_of_segments(&[
+            &"session",
+            self.session()?,
+            &"element",
+            &elt.id(),
+            "attribute",
+            attribute,
+        ])?;
+        let req = self.client.get(url);
         let result = execute(req)?;
 
         Ok(result)
@@ -424,12 +427,9 @@ impl Client {
 
     /// Fetch the tag name of the given element.
     pub fn name(&self, elt: &Element) -> Result<String, Error> {
-        let path = format!(
-            "session/{}/element/{}/name",
-            PathSeg(self.session()?),
-            PathSeg(elt.id())
-        );
-        let req = self.client.get(self.url.join(&path)?);
+        let url =
+            self.url_of_segments(&[&"session", self.session()?, &"element", &elt.id(), "name"])?;
+        let req = self.client.get(url);
         let result = execute(req)?;
 
         Ok(result)
@@ -439,12 +439,11 @@ impl Client {
 
     /// Simulates clicking on the specified element.
     pub fn click(&self, elt: &Element) -> Result<(), Error> {
-        let path = format!(
-            "session/{}/element/{}/click",
-            PathSeg(self.session()?),
-            PathSeg(elt.id())
-        );
-        execute(self.client.post(self.url.join(&path)?).json(&json!({})))?;
+        let url =
+            self.url_of_segments(&[&"session", self.session()?, &"element", &elt.id(), "click"])?;
+        let req = self.client.post(url).json(&json!({}));
+
+        execute(req)?;
 
         Ok(())
     }
@@ -453,15 +452,14 @@ impl Client {
 
     /// Simulates typing into the given element, such as a text input.
     pub fn send_keys(&self, elt: &Element, keys: &'static str) -> Result<(), Error> {
-        let url = self.url.join(&format!(
-            "session/{}/element/{}/value",
-            PathSeg(self.session()?),
-            PathSeg(elt.id())
-        ))?;
-        execute(self.client.post(url).json(&json!({
+        let url =
+            self.url_of_segments(&[&"session", self.session()?, &"element", &elt.id(), "value"])?;
+        let req = self.client.post(url).json(&json!({
             "text": keys,
             "value": [keys],
-        })))?;
+        }));
+
+        execute(req)?;
 
         Ok(())
     }
@@ -469,15 +467,15 @@ impl Client {
 
     /// Clears the given element, such as an input field.
     pub fn clear(&self, elt: &Element) -> Result<(), Error> {
-        let url = self.url.join(&format!(
-            "session/{}/element/{}/clear",
-            PathSeg(self.session()?),
-            PathSeg(elt.id())
-        ))?;
-        execute(self.client.post(url).json(&json!({})))?;
+        let url =
+            self.url_of_segments(&[&"session", self.session()?, &"element", &elt.id(), "clear"])?;
+        let req = self.client.post(url).json(&json!({}));
+
+        execute(req)?;
 
         Ok(())
     }
+
     fn session(&self) -> Result<&str, Error> {
         return self
             .session_id
