@@ -245,8 +245,8 @@ impl Client {
     /// Navigates to the previous page in the browser's history, just like
     /// pressing the back button.
     pub fn back(&self) -> Result<(), Error> {
-        let path = format!("session/{}/back", PathSeg(self.session()?));
-        execute(self.client.post(self.url.join(&path)?).json(&json!({})))
+        let url = self.url_of_segments(&[&"session", self.session()?, &"back"])?;
+        execute(self.client.post(url).json(&json!({})))
     }
 
     // §9.4 Forward
@@ -254,8 +254,8 @@ impl Client {
     /// Navigates to the next page in the browser's history, just like
     /// pressing the back button.
     pub fn forward(&self) -> Result<(), Error> {
-        let path = format!("session/{}/forward", PathSeg(self.session()?));
-        execute(self.client.post(self.url.join(&path)?).json(&json!({})))
+        let url = self.url_of_segments(&[&"session", self.session()?, &"forward"])?;
+        execute(self.client.post(url).json(&json!({})))
     }
 
     // §9.5 Refresh
@@ -263,24 +263,24 @@ impl Client {
     /// Reloads the current page from the server, just like
     /// pressing the "refresh" button.
     pub fn refresh(&self) -> Result<(), Error> {
-        let path = format!("session/{}/refresh", PathSeg(self.session()?));
-        execute(self.client.post(self.url.join(&path)?).json(&json!({})))
+        let url = self.url_of_segments(&[&"session", self.session()?, &"refresh"])?;
+        execute(self.client.post(url).json(&json!({})))
     }
 
     // §9.6 Get Title
 
     /// Fetches the current page's title as a string.
     pub fn title(&self) -> Result<String, Error> {
-        let path = format!("session/{}/title", PathSeg(self.session()?));
-        execute(self.client.get(self.url.join(&path)?))
+        let url = self.url_of_segments(&[&"session", self.session()?, &"title"])?;
+        execute(self.client.get(url))
     }
 
     // §9.2 Get Current URL
 
     /// Fetches the browser's current URL, as would be shown in the URL bar.
     pub fn current_url(&self) -> Result<String, Error> {
-        let path = format!("session/{}/url", PathSeg(self.session()?));
-        execute(self.client.get(self.url.join(&path)?))
+        let url = self.url_of_segments(&[&"session", self.session()?, &"url"])?;
+        execute(self.client.get(url))
     }
 
     // §10.1 Get Current Window handle
