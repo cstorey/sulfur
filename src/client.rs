@@ -235,13 +235,9 @@ impl Client {
     // §9.1 Navigate To
 
     /// Tells the browser to open the given URL.
-    pub fn visit(&self, url: &str) -> Result<(), Error> {
-        let path = format!("session/{}/url", PathSeg(self.session()?));
-        execute(
-            self.client
-                .post(self.url.join(&path)?)
-                .json(&json!({ "url": url })),
-        )
+    pub fn visit(&self, visit_url: &str) -> Result<(), Error> {
+        let url = self.url_of_segments(&[&"session", self.session()?, &"url"])?;
+        execute(self.client.post(url).json(&json!({ "url": visit_url })))
     }
 
     // §9.3 Back
