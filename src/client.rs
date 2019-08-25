@@ -444,7 +444,7 @@ impl Client {
     // §12.4.3 Element Send Keys
 
     /// Simulates typing into the given element, such as a text input.
-    pub fn send_keys(&self, elt: &Element, keys: &'static str) -> Result<(), Error> {
+    pub fn send_keys(&self, elt: &Element, keys: &str) -> Result<(), Error> {
         let url =
             self.url_of_segments(&[&"session", self.session()?, &"element", elt.id(), "value"])?;
         let req = self.client.post(url).json(&json!({
