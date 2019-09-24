@@ -4,23 +4,25 @@ extern crate sulfur;
 extern crate lazy_static;
 extern crate futures;
 extern crate tokio;
-extern crate warp;
 #[macro_use]
 extern crate log;
 extern crate failure;
+extern crate hyper;
+extern crate hyper_staticfile;
 extern crate url;
 
 use std::collections::{BTreeMap, BTreeSet};
 use std::env;
 use std::net::SocketAddr;
+use std::path::Path;
 use std::sync::Mutex;
 use std::{thread, time};
 
 use futures::sync::oneshot;
+use tokio::runtime;
 
 use sulfur::chrome;
 use sulfur::*;
-use tokio::runtime;
 
 const TEST_HTML_DIR: &'static str = concat!(env!("CARGO_MANIFEST_DIR"), "/tests/html");
 
@@ -29,7 +31,7 @@ lazy_static! {
         Mutex::new(runtime::Runtime::new().expect("tokio runtime"));
     static ref SERVER: TestServer = {
         debug!("Starting test server for {}", TEST_HTML_DIR);
-        let srv = TestServer::start(warp::fs::dir(TEST_HTML_DIR));
+        let srv = TestServer::start(Path::new(TEST_HTML_DIR)).expect("Testserver");
         debug!("Test server at {}", srv.url());
         srv
     };
@@ -71,21 +73,27 @@ struct TestServer {
 // https://github.com/seanmonstar/warp/blob/master/examples/returning.rs
 // https://github.com/seanmonstar/warp/blob/master/examples/dir.rs
 impl TestServer {
-    fn start<S, R>(f: S) -> Self
-    where
-        S: warp::Filter<Extract = (R,), Error = warp::Rejection> + Sync + Send + 'static,
-        R: warp::Reply,
-    {
+    fn start(path: &Path) -> Result<Self, failure::Error> {
+        use futures::Future;
+        use std::net;
+
         let (tx, rx) = oneshot::channel::<()>();
+        let path = path.to_owned();
+        let addr: net::SocketAddr = "127.0.0.1:0".parse()?;
+        let sock = net::TcpListener::bind(&addr)?;
+        let addr = sock.local_addr()?;
 
-        let (addr, server) = warp::serve(f).bind_with_graceful_shutdown(([127, 0, 0, 1], 0), rx);
-
+        let server = hyper::Server::from_tcp(sock)?
+            .serve(move || Result::<_, failure::Error>::Ok(hyper_staticfile::Static::new(&path)))
+            .map_err(|e| eprintln!("server error: {}", e))
+            .select(rx.map_err(|cancelled| warn!("Cancelled: {:?}", cancelled)))
+            .then(|_| Ok(()));
         RT.lock().expect("lock runtime").spawn(server);
 
-        TestServer {
+        Ok(TestServer {
             drop: Some(tx),
             addr: addr,
-        }
+        })
     }
     fn url(&self) -> String {
         format!("http://{}:{}/", self.addr.ip(), self.addr.port())
