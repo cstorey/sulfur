@@ -17,7 +17,7 @@ pub struct DriverHolder {
     pub(crate) client: client::Client,
     // This is only used so we can drop it _after_ we have dropped the client.
     #[allow(dead_code)]
-    pub(crate) driver: Box<Driver>,
+    pub(crate) driver: Box<dyn Driver>,
 }
 
 impl DriverHolder {
