@@ -473,7 +473,7 @@ impl Drop for Client {
     }
 }
 
-fn execute_unparsed<R>(req: reqwest::RequestBuilder) -> Result<R, Error>
+fn execute<R>(req: reqwest::RequestBuilder) -> Result<R, Error>
 where
     R: for<'de> serde::Deserialize<'de>,
 {
@@ -499,13 +499,6 @@ where
             bail!("Error on execution: {:?}", res);
         }
     }
-}
-
-fn execute<R>(req: reqwest::RequestBuilder) -> Result<R, Error>
-where
-    R: for<'de> serde::Deserialize<'de>,
-{
-    Ok(execute_unparsed(req)?)
 }
 
 impl std::error::Error for WdError {}
