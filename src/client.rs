@@ -22,13 +22,8 @@ struct HasValue {
 }
 
 impl HasValue {
-    fn parse<T: serde::de::DeserializeOwned>(&self) -> Result<T, Error> {
-        Ok(serde_json::from_value(self.value.clone())?)
-    }
-
-    // does `self.value | .error` exist?
-    fn is_okay(&self) -> bool {
-        return true;
+    fn parse<T: serde::de::DeserializeOwned>(self) -> Result<T, Error> {
+        Ok(serde_json::from_value(self.value)?)
     }
 }
 
@@ -490,13 +485,7 @@ where
     let mut res = req.send()?;
     if res.status().is_success() {
         let data: HasValue = res.json()?;
-        if data.is_okay() {
-            Ok(data)
-        } else {
-            let outer: HasValue = data.parse()?;
-            let error: WdError = serde_json::from_value(outer.value)?;
-            Err(error.into())
-        }
+        Ok(data)
     } else {
         let content_type = res
             .headers()
