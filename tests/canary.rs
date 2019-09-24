@@ -601,6 +601,25 @@ fn frames_parent() {
     )
 }
 
+#[test]
+fn should_include_message_in_errors() {
+    env_logger::try_init().unwrap_or_default();
+
+    let url = SERVER.url();
+    let s = new_session().expect("new_session");
+
+    s.visit(&url).expect("visit");
+    let err = s
+        .find_element(&By::tag_name("thing-that-is-not-present"))
+        .expect_err("failing find");
+    let wd_error = err.downcast_ref::<WdError>().expect("Extract WdError");
+    assert!(
+        wd_error.message.contains("thing-that-is-not-present"),
+        "Error contains the name of the missing tag: {:?}",
+        wd_error
+    )
+}
+
 fn wait_until<F: FnMut() -> Result<bool, failure::Error>>(
     deadline: time::Duration,
     mut check: F,
