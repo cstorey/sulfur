@@ -53,16 +53,14 @@ struct NewSessionResp {
     pub(crate) session_id: String,
 }
 
+/// An error returned from the webdriver implementation.
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
-struct WdErrorVal {
-    message: String,
-}
-
-#[derive(Debug, Deserialize, Fail)]
-#[serde(rename_all = "camelCase")]
-struct WdError {
-    value: WdErrorVal,
+pub struct WdError {
+    /// The webdriver error code.
+    pub error: String,
+    /// The message from the webdriver implementation.
+    pub message: String,
 }
 
 /// Describes the timeouts used by the webserver service.
@@ -87,7 +85,7 @@ pub struct Window(String);
 
 impl fmt::Display for WdError {
     fn fmt(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
-        write!(fmt, "{}", self.value.message)
+        write!(fmt, "{}", self.message)
     }
 }
 
@@ -495,8 +493,9 @@ where
         if data.is_okay() {
             Ok(data)
         } else {
-            let value: WdErrorVal = data.parse()?;
-            Err(WdError { value: value }.into())
+            let outer: HasValue = data.parse()?;
+            let error: WdError = serde_json::from_value(outer.value)?;
+            Err(error.into())
         }
     } else {
         let content_type = res
@@ -507,8 +506,9 @@ where
             .to_string();
 
         if content_type.starts_with("application/json") {
-            let json: serde_json::Value = res.json()?;
-            bail!("Error on execution: {:?} / {:?}", res, json);
+            let outer: HasValue = res.json()?;
+            let error: WdError = serde_json::from_value(outer.value)?;
+            Err(error.into())
         } else if content_type.starts_with("text/") {
             let message = res.text()?;
             bail!("Error on execution: {:?} / {:?}", res, message);
@@ -523,4 +523,34 @@ where
     R: for<'de> serde::Deserialize<'de>,
 {
     Ok(execute_unparsed(req)?.parse()?)
+}
+
+impl std::error::Error for WdError {}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn can_parse_error_response_from_chrome_driver() {
+        let msg = r#"
+{
+  "value": {
+    "error": "no such element",
+    "message": "no such element: Unable to locate element: {\"method\":\"tag name\",\"selector\":\"thing-that-is-not-present\"}\n  (Session info: headless chrome=77.0.3865.90)",
+    "stacktrace": "0   chromedriver                        0x000000010ea38129 chromedriver + 3649833\n1   chromedriver                        0x000000010e9c8133 chromedriver + 3191091\n2   chromedriver                        0x000000010e768cef chromedriver + 703727\n3   chromedriver                        0x000000010e6de6f1 chromedriver + 136945\n4   chromedriver                    0x000000010e706487 chromedriver + 300167\n5   chromedriver                        0x000000010e6fa9cd chromedriver + 252365\n6   chromedriver                        0x000000010e704a37 chromedriver + 293431\n7   chromedriver                        0x000000010e6fabf3 chromedriver + 252915\n8   chromedriver                        0x000000010e6d67e2 chromedriver + 104418\n9   chromedriver 0x000000010e6d78a5 chromedriver + 108709\n10  chromedriver                        0x000000010e9f5c1f chromedriver + 3378207\n11  chromedriver                       0x000000010ea01940 chromedriver + 3426624\n12  chromedriver                        0x000000010ea016d8 chromedriver + 3426008\n13  chromedriver                        0x000000010e9d6069 chromedriver + 3248233\n14  chromedriver                        0x000000010ea021b8 chromedriver + 3428792\n15  chromedriver                        0x000000010e9e9f07 chromedriver + 3329799\n16  chromedriver         0x000000010ea1f014 chromedriver + 3547156\n17  chromedriver                        0x000000010ea3de67 chromedriver + 3673703\n18  libsystem_pthread.dylib             0x00007fff61be0661 _pthread_body + 340\n19  libsystem_pthread.dylib             0x00007fff61be050d _pthread_body + 0\n20  libsystem_pthread.dylib             0x00007fff61bdfbf9 thread_start + 13\n"
+  }
+}
+"#;
+        #[derive(Debug, Clone, Eq, PartialEq, Deserialize)]
+        struct ErrVal<T> {
+            value: T,
+        }
+
+        let parsed: ErrVal<WdError> = serde_json::from_str(msg).expect("parse json");
+
+        println!("parsed: {:?}", parsed);
+        assert_eq!(parsed.value.error, "no such element");
+        assert_eq!(parsed.value.message, "no such element: Unable to locate element: {\"method\":\"tag name\",\"selector\":\"thing-that-is-not-present\"}\n  (Session info: headless chrome=77.0.3865.90)");
+    }
 }
