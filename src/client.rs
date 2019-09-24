@@ -17,14 +17,8 @@ pub struct Client {
 }
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
-struct HasValue {
-    value: serde_json::Value,
-}
-
-impl HasValue {
-    fn parse<T: serde::de::DeserializeOwned>(self) -> Result<T, Error> {
-        Ok(serde_json::from_value(self.value)?)
-    }
+struct HasValue<T> {
+    value: T,
 }
 
 /// The representation of a new session request, allowing specification
@@ -479,13 +473,14 @@ impl Drop for Client {
     }
 }
 
-fn execute_unparsed(req: reqwest::RequestBuilder) -> Result<HasValue, Error>
+fn execute_unparsed<R>(req: reqwest::RequestBuilder) -> Result<R, Error>
 where
+    R: for<'de> serde::Deserialize<'de>,
 {
     let mut res = req.send()?;
     if res.status().is_success() {
-        let data: HasValue = res.json()?;
-        Ok(data)
+        let data: HasValue<R> = res.json()?;
+        Ok(data.value)
     } else {
         let content_type = res
             .headers()
@@ -495,9 +490,8 @@ where
             .to_string();
 
         if content_type.starts_with("application/json") {
-            let outer: HasValue = res.json()?;
-            let error: WdError = serde_json::from_value(outer.value)?;
-            Err(error.into())
+            let error: HasValue<WdError> = res.json()?;
+            Err(error.value.into())
         } else if content_type.starts_with("text/") {
             let message = res.text()?;
             bail!("Error on execution: {:?} / {:?}", res, message);
@@ -511,7 +505,7 @@ fn execute<R>(req: reqwest::RequestBuilder) -> Result<R, Error>
 where
     R: for<'de> serde::Deserialize<'de>,
 {
-    Ok(execute_unparsed(req)?.parse()?)
+    Ok(execute_unparsed(req)?)
 }
 
 impl std::error::Error for WdError {}
