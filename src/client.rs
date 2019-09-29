@@ -456,6 +456,19 @@ impl Client {
         Ok(())
     }
 
+    // §13.1 Get Page Source
+
+    /// Fetches the HTML source for the current document.
+    pub fn page_source(&self) -> Result<String, Error> {
+        let url =
+            self.url_of_segments(&[&"session", self.session()?, &"source"])?;
+        let req = self.client.get(url);
+
+        let result = execute(req)?;
+
+        Ok(result)
+    }
+
     fn session(&self) -> Result<&str, Error> {
         return self
             .session_id

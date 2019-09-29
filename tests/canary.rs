@@ -620,6 +620,25 @@ fn should_include_message_in_errors() {
     )
 }
 
+
+#[test]
+fn should_get_page_source() {
+    env_logger::try_init().unwrap_or_default();
+
+    let url = SERVER.url();
+    let s = new_session().expect("new_session");
+
+    s.visit(&url).expect("visit");
+    let source = s.page_source().expect("page_source");
+    let expected = "<title>Page title</title>";
+    assert!(
+        source.contains(expected),
+        "Page source should contain {}: Got {:?}",
+        expected, source,
+    )
+}
+
+
 fn wait_until<F: FnMut() -> Result<bool, failure::Error>>(
     deadline: time::Duration,
     mut check: F,
