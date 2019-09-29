@@ -10,6 +10,7 @@ extern crate failure;
 extern crate hyper;
 extern crate hyper_staticfile;
 extern crate url;
+extern crate tempfile;
 
 use std::collections::{BTreeMap, BTreeSet};
 use std::env;
@@ -636,6 +637,29 @@ fn should_get_page_source() {
         "Page source should contain {}: Got {:?}",
         expected, source,
     )
+}
+
+#[test]
+fn should_get_document_screenshot() {
+    use std::fs;
+    use std::io::Write;
+
+    env_logger::try_init().unwrap_or_default();
+
+    let url = SERVER.url();
+    let s = new_session().expect("new_session");
+    s.visit(&url).expect("visit");
+
+    let ss = s.screenshot().expect("document screenshot");
+
+    assert!(ss.len() > 0, "Returns non-empty set of bytes");
+
+    let path = tempfile::tempdir().expect("tempdir").into_path();
+    let ss_path = path.join("document.png");
+    let mut w = fs::File::create(&ss_path).expect("document.png");
+    w.write_all(&ss).expect("write_all");
+    w.flush().expect("flush");
+    println!("Wrote {} bytes of image to {:?}", ss.len(), ss_path);
 }
 
 

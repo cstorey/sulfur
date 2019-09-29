@@ -17,6 +17,7 @@ extern crate url;
 extern crate log;
 extern crate percent_encoding;
 extern crate rand;
+extern crate base64;
 
 mod junk_drawer;
 

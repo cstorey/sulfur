@@ -3,6 +3,7 @@ use std::fmt;
 
 use failure::Error;
 use percent_encoding::{utf8_percent_encode, AsciiSet, CONTROLS};
+use base64;
 
 const QUERY_ENCODE_SET: &AsciiSet = &CONTROLS.add(b' ').add(b'"').add(b'<').add(b'>').add(b'`');
 const DEFAULT_ENCODE_SET: &AsciiSet = &QUERY_ENCODE_SET.add(b'`').add(b'?').add(b'{').add(b'}');
@@ -467,6 +468,19 @@ impl Client {
         let result = execute(req)?;
 
         Ok(result)
+    }
+
+    // §17.1 Take Screenshot
+
+    /// Takes a screenshot of the current document.
+    pub fn screenshot(&self) -> Result<Vec<u8>, Error> {
+        let url =
+            self.url_of_segments(&[&"session", self.session()?, &"screenshot"])?;
+        let req = self.client.get(url);
+
+        let b64_content : String = execute(req)?;
+        
+        Ok(base64::decode(&b64_content)?)
     }
 
     fn session(&self) -> Result<&str, Error> {
