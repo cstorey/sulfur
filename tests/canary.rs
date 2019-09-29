@@ -9,8 +9,8 @@ extern crate log;
 extern crate failure;
 extern crate hyper;
 extern crate hyper_staticfile;
-extern crate url;
 extern crate tempfile;
+extern crate url;
 
 use std::collections::{BTreeMap, BTreeSet};
 use std::env;
@@ -621,7 +621,6 @@ fn should_include_message_in_errors() {
     )
 }
 
-
 #[test]
 fn should_get_page_source() {
     env_logger::try_init().unwrap_or_default();
@@ -635,7 +634,8 @@ fn should_get_page_source() {
     assert!(
         source.contains(expected),
         "Page source should contain {}: Got {:?}",
-        expected, source,
+        expected,
+        source,
     )
 }
 
@@ -662,6 +662,32 @@ fn should_get_document_screenshot() {
     println!("Wrote {} bytes of image to {:?}", ss.len(), ss_path);
 }
 
+#[test]
+fn should_get_element_screenshot() {
+    use std::fs;
+    use std::io::Write;
+
+    env_logger::try_init().unwrap_or_default();
+
+    let url = SERVER.url();
+    let s = new_session().expect("new_session");
+    s.visit(&url).expect("visit");
+
+    let elt = s
+        .find_element(&By::css(".clickable-link"))
+        .expect("find .clickable-link");
+
+    let ss = s.element_screenshot(&elt).expect("element screenshot");
+
+    assert!(ss.len() > 0, "Returns non-empty set of bytes");
+
+    let path = tempfile::tempdir().expect("tempdir").into_path();
+    let ss_path = path.join("document.png");
+    let mut w = fs::File::create(&ss_path).expect("document.png");
+    w.write_all(&ss).expect("write_all");
+    w.flush().expect("flush");
+    println!("Wrote {} bytes of image to {:?}", ss.len(), ss_path);
+}
 
 fn wait_until<F: FnMut() -> Result<bool, failure::Error>>(
     deadline: time::Duration,

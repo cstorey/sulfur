@@ -1,9 +1,9 @@
 use std::borrow::Cow;
 use std::fmt;
 
+use base64;
 use failure::Error;
 use percent_encoding::{utf8_percent_encode, AsciiSet, CONTROLS};
-use base64;
 
 const QUERY_ENCODE_SET: &AsciiSet = &CONTROLS.add(b' ').add(b'"').add(b'<').add(b'>').add(b'`');
 const DEFAULT_ENCODE_SET: &AsciiSet = &QUERY_ENCODE_SET.add(b'`').add(b'?').add(b'{').add(b'}');
@@ -461,8 +461,7 @@ impl Client {
 
     /// Fetches the HTML source for the current document.
     pub fn page_source(&self) -> Result<String, Error> {
-        let url =
-            self.url_of_segments(&[&"session", self.session()?, &"source"])?;
+        let url = self.url_of_segments(&[&"session", self.session()?, &"source"])?;
         let req = self.client.get(url);
 
         let result = execute(req)?;
@@ -474,12 +473,29 @@ impl Client {
 
     /// Takes a screenshot of the current document.
     pub fn screenshot(&self) -> Result<Vec<u8>, Error> {
-        let url =
-            self.url_of_segments(&[&"session", self.session()?, &"screenshot"])?;
+        let url = self.url_of_segments(&[&"session", self.session()?, &"screenshot"])?;
         let req = self.client.get(url);
 
-        let b64_content : String = execute(req)?;
-        
+        let b64_content: String = execute(req)?;
+
+        Ok(base64::decode(&b64_content)?)
+    }
+
+    // §17.2 Take Screenshot
+
+    /// Takes a screenshot of the current document.
+    pub fn element_screenshot(&self, elt: &Element) -> Result<Vec<u8>, Error> {
+        let url = self.url_of_segments(&[
+            &"session",
+            self.session()?,
+            &"element",
+            elt.id(),
+            "screenshot",
+        ])?;
+        let req = self.client.get(url);
+
+        let b64_content: String = execute(req)?;
+
         Ok(base64::decode(&b64_content)?)
     }
 

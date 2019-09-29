@@ -15,9 +15,9 @@ extern crate failure;
 extern crate url;
 #[macro_use]
 extern crate log;
+extern crate base64;
 extern crate percent_encoding;
 extern crate rand;
-extern crate base64;
 
 mod junk_drawer;
 
