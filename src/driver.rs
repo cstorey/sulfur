@@ -2,7 +2,7 @@ use std::ops::{Deref, DerefMut};
 
 use failure::Error;
 
-use client;
+use crate::client;
 
 /// This marks that something is a driver, that is it manages an instance of
 /// something used to remote control a browser.

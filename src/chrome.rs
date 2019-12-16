@@ -8,9 +8,9 @@ use failure::Error;
 use failure::ResultExt;
 use reqwest;
 
-use client::{Capabilities, Client};
-use driver::{self, DriverHolder};
-use junk_drawer::{self, unused_port_no};
+use crate::client::{Capabilities, Client};
+use crate::driver::{self, DriverHolder};
+use crate::junk_drawer::{self, unused_port_no};
 
 const START_TIMEOUT: time::Duration = time::Duration::from_secs(120);
 

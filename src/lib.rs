@@ -26,5 +26,5 @@ mod client;
 mod driver;
 pub mod gecko;
 
-pub use client::*;
-pub use driver::*;
+pub use crate::client::*;
+pub use crate::driver::*;
