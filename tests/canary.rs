@@ -21,7 +21,7 @@ use std::{thread, time};
 
 use futures::channel::oneshot;
 use futures::future::select;
-use hyper::service::{make_service_fn, service_fn};
+use hyper::service::make_service_fn;
 use tokio::runtime;
 
 use sulfur::chrome;
@@ -81,12 +81,9 @@ impl TestServer {
         let sock = net::TcpListener::bind(&addr)?;
         let addr = sock.local_addr()?;
 
-        let make_service = make_service_fn(move |_| {
-            let content = hyper_staticfile::Static::new(&path);
-            futures::future::ok::<_, hyper::Error>(service_fn(move |req| {
-                content.clone().serve(req)
-            }))
-        });
+        let content = hyper_staticfile::Static::new(&path);
+        let make_service =
+            make_service_fn(move |_| futures::future::ok::<_, hyper::Error>(content.clone()));
 
         thread::Builder::new()
             .name("TestServer".to_string())
