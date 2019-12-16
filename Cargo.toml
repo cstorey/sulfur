@@ -7,6 +7,8 @@ license = "Apache-2.0"
 name = "sulfur"
 repository = "https://github.com/cstorey/sulfur"
 version = "0.1.0"
+edition = "2018"
+
 [dependencies]
 failure = "0.1.3"
 log = "0.4.6"
