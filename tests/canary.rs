@@ -19,7 +19,9 @@ use std::path::Path;
 use std::sync::Mutex;
 use std::{thread, time};
 
-use futures::sync::oneshot;
+use futures::channel::oneshot;
+use futures::future::select;
+use hyper::service::{make_service_fn, service_fn};
 use tokio::runtime;
 
 use sulfur::chrome;
@@ -69,13 +71,8 @@ struct TestServer {
     addr: SocketAddr,
 }
 
-// ... Oh god. Maybe I should just use warp.
-// At least I can make that work.
-// https://github.com/seanmonstar/warp/blob/master/examples/returning.rs
-// https://github.com/seanmonstar/warp/blob/master/examples/dir.rs
 impl TestServer {
     fn start(path: &Path) -> Result<Self, failure::Error> {
-        use futures::Future;
         use std::net;
 
         let (tx, rx) = oneshot::channel::<()>();
@@ -84,17 +81,32 @@ impl TestServer {
         let sock = net::TcpListener::bind(&addr)?;
         let addr = sock.local_addr()?;
 
-        let server = hyper::Server::from_tcp(sock)?
-            .serve(move || Result::<_, failure::Error>::Ok(hyper_staticfile::Static::new(&path)))
-            .map_err(|e| eprintln!("server error: {}", e))
-            .select(rx.map_err(|cancelled| warn!("Cancelled: {:?}", cancelled)))
-            .then(|_| Ok(()));
-        RT.lock().expect("lock runtime").spawn(server);
+        let make_service = make_service_fn(move |_| {
+            let content = hyper_staticfile::Static::new(&path);
+            futures::future::ok::<_, hyper::Error>(service_fn(move |req| {
+                content.clone().serve(req)
+            }))
+        });
 
-        Ok(TestServer {
+        thread::Builder::new()
+            .name("TestServer".to_string())
+            .spawn(move || {
+                let mut rt = RT.lock().expect("lock runtime");
+                rt.block_on(async {
+                    let srv = hyper::Server::from_tcp(sock)
+                        .expect("listen on socket")
+                        .serve(make_service);
+                    debug!("Starting server");
+                    select(srv, rx).await
+                })
+            })?;
+
+        let s = TestServer {
             drop: Some(tx),
             addr: addr,
-        })
+        };
+        debug!("Test server listening at: {}", s.url());
+        Ok(s)
     }
     fn url(&self) -> String {
         format!("http://{}:{}/", self.addr.ip(), self.addr.port())
